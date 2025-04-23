@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grate Sag Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 24px;
+            color: #2c3e50;
+        }
+        h2 {
+            color: #3498db;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        h3 {
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 16px;
+            margin-right: 10px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button.reset {
+            background-color: #95a5a6;
+        }
+        button.reset:hover {
+            background-color: #7f8c8d;
+        }
+        .button-group {
+            margin-bottom: 20px;
+            display: flex;
+        }
+        .results {
+            display: none;
+            margin-top: 20px;
+        }
+        .result-section {
+            border-top: 1px solid #eee;
+            padding: 15px 0;
+        }
+        .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .result-item p:first-child {
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        .result-item p:last-child {
+            font-weight: bold;
+            font-size: 18px;
+            margin-top: 0;
+        }
+        .info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .info p {
+            margin: 5px 0;
+        }
+        .info p:first-child {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Grate Sag Calculator</h1>
+        
+        <div>
+            <h2>Input Parameters</h2>
+            <div>
+                <label for="grateArea">Grate Inlet Open Area (ft²):</label>
+                <input type="number" id="grateArea" placeholder="Enter grate open area" step="0.01" min="0">
+            </div>
+            
+            <div>
+                <label for="inletPerimeter">Inlet Perimeter (ft):</label>
+                <input type="number" id="inletPerimeter" placeholder="Enter inlet perimeter" step="0.01" min="0">
+            </div>
+            
+            <div>
+                <label for="flowRate">10-Year Design Flow Rate, Q (cfs):</label>
+                <input type="number" id="flowRate" placeholder="Enter 10-yr Q" step="0.01" min="0">
+            </div>
+            
+            <div>
+                <label for="crossSlope">Cross Slope, Sx (ft/ft):</label>
+                <input type="number" id="crossSlope" placeholder="Enter cross slope" step="0.001" min="0">
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button id="calculate">Calculate</button>
+            <button id="reset" class="reset">Reset</button>
+        </div>
+        
+        <div id="results" class="results">
+            <h2>Results</h2>
+            
+            <div class="result-section">
+                <h3>Orifice Flow Condition</h3>
+                <div class="result-grid">
+                    <div class="result-item">
+                        <p>Depth (h):</p>
+                        <p id="orificeDepth">0.00 inches</p>
+                    </div>
+                    <div class="result-item">
+                        <p>Total Spread (T):</p>
+                        <p id="orificeSpread">0.00 feet</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="result-section">
+                <h3>Weir Flow Condition</h3>
+                <div class="result-grid">
+                    <div class="result-item">
+                        <p>Depth (h):</p>
+                        <p id="weirDepth">0.00 inches</p>
+                    </div>
+                    <div class="result-item">
+                        <p>Total Spread (T):</p>
+                        <p id="weirSpread">0.00 feet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info">
+            <p>Equations Used:</p>
+            <p>Orifice Equation: Q = Cd×A×(2gh)^0.5, solved for h = (Q/(Cd×A×√(2g)))²</p>
+            <p>Weir Equation: Q = Cw×L×h^1.5, solved for h = (Q/(Cw×L))^(2/3)</p>
+            <p>Total Spread: T = 2×h/Sx (accounts for both sides)</p>
+            <p>Where: Cd = 0.6, Cw = 3.0, g = 32.2 ft/s²</p>
+            <p>A = Grate open area, L = Inlet perimeter</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Constants
+            const GRAVITY = 32.2; // ft/s²
+            const ORIFICE_COEFFICIENT = 0.6; // Typical value for Cd
+            const WEIR_COEFFICIENT = 3.0; // Typical value for Cw
+            
+            // DOM elements
+            const calculateBtn = document.getElementById('calculate');
+            const resetBtn = document.getElementById('reset');
+            const resultsDiv = document.getElementById('results');
+            
+            const grateAreaInput = document.getElementById('grateArea');
+            const inletPerimeterInput = document.getElementById('inletPerimeter');
+            const flowRateInput = document.getElementById('flowRate');
+            const crossSlopeInput = document.getElementById('crossSlope');
+            
+            const orificeDepthOutput = document.getElementById('orificeDepth');
+            const orificeSpreadOutput = document.getElementById('orificeSpread');
+            const weirDepthOutput = document.getElementById('weirDepth');
+            const weirSpreadOutput = document.getElementById('weirSpread');
+            
+            // Calculate button click handler
+            calculateBtn.addEventListener('click', function() {
+                // Validate inputs
+                const grateArea = parseFloat(grateAreaInput.value);
+                const inletPerimeter = parseFloat(inletPerimeterInput.value);
+                const flowRate = parseFloat(flowRateInput.value);
+                const crossSlope = parseFloat(crossSlopeInput.value);
+                
+                if (!grateArea || !inletPerimeter || !flowRate || !crossSlope || 
+                    grateArea <= 0 || inletPerimeter <= 0 || flowRate <= 0 || crossSlope <= 0) {
+                    alert("Please enter valid positive values for all inputs");
+                    return;
+                }
+                
+                // Calculate depth using orifice equation: Q = Cd*A*(2*g*h)^0.5, solved for h
+                const orificeH = Math.pow(flowRate / (ORIFICE_COEFFICIENT * grateArea * Math.sqrt(2 * GRAVITY)), 2);
+                const orificeD = orificeH * 12; // Convert to inches
+                
+                // Calculate total spread: T = 2*h/Sx
+                const orificeT = 2 * orificeH / crossSlope;
+                
+                // Calculate depth using weir equation: Q = Cw*L*h^1.5, solved for h = (Q/(Cw*L))^(2/3)
+                const weirH = Math.pow(flowRate / (WEIR_COEFFICIENT * inletPerimeter), 2/3);
+                const weirD = weirH * 12; // Convert to inches
+                
+                // Calculate total spread for weir flow
+                const weirT = 2 * weirH / crossSlope;
+                
+                // Update results
+                orificeDepthOutput.textContent = orificeD.toFixed(2) + " inches";
+                orificeSpreadOutput.textContent = orificeT.toFixed(2) + " feet";
+                weirDepthOutput.textContent = weirD.toFixed(2) + " inches";
+                weirSpreadOutput.textContent = weirT.toFixed(2) + " feet";
+                
+                // Show results
+                resultsDiv.style.display = 'block';
+            });
+            
+            // Reset button click handler
+            resetBtn.addEventListener('click', function() {
+                grateAreaInput.value = '';
+                inletPerimeterInput.value = '';
+                flowRateInput.value = '';
+                crossSlopeInput.value = '';
+                
+                resultsDiv.style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>

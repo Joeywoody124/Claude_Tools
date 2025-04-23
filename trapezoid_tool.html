@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trapezoidal Cross Section Generator</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="number"] {
+            width: calc(100% - 22px);
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #output {
+            margin-top: 20px;
+            border-top: 1px solid #ccc;
+            padding-top: 15px;
+        }
+        #output h3 {
+            margin-top: 0;
+        }
+        #resultsTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        #resultsTable th, #resultsTable td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        #resultsTable th {
+            background-color: #f2f2f2;
+        }
+        #swmmOutput {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            resize: none;
+            font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+            white-space: pre;
+            overflow-wrap: normal;
+            overflow-x: auto;
+        }
+        .copy-instructions {
+            font-size: 0.9em;
+            color: #555;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Trapezoidal Cross Section Generator</h2>
+
+    <label for="depth">Depth (e.g., 2):</label>
+    <input type="number" id="depth" value="2" step="any">
+
+    <label for="bottomWidth">Bottom Width (e.g., 4):</label>
+    <input type="number" id="bottomWidth" value="4" step="any">
+
+    <label for="leftSlope">Left Side Slope (Horizontal:1 Vertical, e.g., 3 for 3:1):</label>
+    <input type="number" id="leftSlope" value="3" step="any">
+
+    <label for="rightSlope">Right Side Slope (Horizontal:1 Vertical, e.g., 3 for 3:1):</label>
+    <input type="number" id="rightSlope" value="3" step="any">
+
+    <label for="refElevation">Reference Bottom Elevation (e.g., 100):</label>
+    <input type="number" id="refElevation" value="100" step="any">
+
+    <button onclick="generateCrossSection()">Generate Points</button>
+
+    <div id="output" style="display: none;">
+        <h3>Generated Points</h3>
+        <table id="resultsTable">
+            <thead>
+                <tr>
+                    <th>Point</th>
+                    <th>Offset</th>
+                    <th>Elevation</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+
+        <h3>SWMM Input Format (Offset Elevation pairs)</h3>
+        <textarea id="swmmOutput" readonly></textarea>
+        <div class="copy-instructions">Copy the text from the box above and paste into SWMM's Xsections editor.</div>
+    </div>
+</div>
+
+<script>
+    function generateCrossSection() {
+        const depth = parseFloat(document.getElementById('depth').value);
+        const bottomWidth = parseFloat(document.getElementById('bottomWidth').value);
+        const leftSlope = parseFloat(document.getElementById('leftSlope').value);
+        const rightSlope = parseFloat(document.getElementById('rightSlope').value);
+        const refElevation = parseFloat(document.getElementById('refElevation').value);
+
+        // Basic input validation
+        if (isNaN(depth) || isNaN(bottomWidth) || isNaN(leftSlope) || isNaN(rightSlope) || isNaN(refElevation)) {
+            alert("Please enter valid numbers for all fields.");
+            return;
+        }
+        if (depth <= 0 || bottomWidth <= 0 || leftSlope < 0 || rightSlope < 0) {
+             alert("Depth and Bottom Width must be positive. Slopes must be non-negative.");
+             return;
+        }
+
+
+        const topElevation = refElevation + depth;
+
+        // Calculate points (Offset, Elevation)
+        // Order for SWMM is typically left to right by offset
+        const points = [];
+
+        // Top Left Point
+        const topLeftOffset = -bottomWidth / 2 - leftSlope * depth;
+        points.push({ offset: topLeftOffset, elevation: topElevation });
+
+        // Bottom Left Point
+        const bottomLeftOffset = -bottomWidth / 2;
+        points.push({ offset: bottomLeftOffset, elevation: refElevation });
+
+        // Bottom Right Point
+        const bottomRightOffset = bottomWidth / 2;
+        points.push({ offset: bottomRightOffset, elevation: refElevation });
+
+        // Top Right Point
+        const topRightOffset = bottomWidth / 2 + rightSlope * depth;
+        points.push({ offset: topRightOffset, elevation: topElevation });
+
+        // Sort points by offset for SWMM compatibility (left to right)
+         points.sort((a, b) => a.offset - b.offset);
+
+
+        // Display points in the table
+        const resultsTableBody = document.querySelector('#resultsTable tbody');
+        resultsTableBody.innerHTML = ''; // Clear previous results
+
+        points.forEach((point, index) => {
+            const row = resultsTableBody.insertRow();
+            const cellPoint = row.insertCell(0);
+            const cellOffset = row.insertCell(1);
+            const cellElevation = row.insertCell(2);
+
+            cellPoint.textContent = `Point ${index + 1}`;
+            cellOffset.textContent = point.offset.toFixed(4); // Format to 4 decimal places
+            cellElevation.textContent = point.elevation.toFixed(4); // Format to 4 decimal places
+        });
+
+        // Generate SWMM output format
+        let swmmOutputText = '';
+        points.forEach(point => {
+            swmmOutputText += `${point.offset.toFixed(4)} ${point.elevation.toFixed(4)}\n`;
+        });
+
+        document.getElementById('swmmOutput').value = swmmOutputText.trim(); // Remove trailing newline
+
+        // Show the output section
+        document.getElementById('output').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>

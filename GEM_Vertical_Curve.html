@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roadway Vertical Curve Calculator</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: auto;
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .input-group label {
+            flex: 1; /* Label takes up available space */
+            margin-right: 10px;
+            font-weight: bold;
+            color: #555;
+        }
+        .input-group input[type="number"] {
+            flex: 2; /* Input takes up more space */
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box; /* Include padding in width */
+        }
+        .input-group span {
+            margin-left: 5px;
+            color: #777;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #results {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+        #results h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+         #results p {
+            margin: 8px 0;
+            font-size: 0.95em;
+         }
+        .result-label {
+            font-weight: bold;
+            min-width: 180px; /* Align values */
+            display: inline-block;
+        }
+         .error {
+            color: red;
+            font-weight: bold;
+            margin-top: 10px;
+            text-align: center;
+         }
+         .highlight {
+             background-color: #fff3cd;
+             padding: 5px;
+             border-radius: 3px;
+         }
+         footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 0.8em;
+            color: #666;
+         }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Vertical Curve Calculator</h1>
+    <p>Enter the Point of Vertical Intersection (PVI) data, grades, and curve length to calculate curve parameters, including high/low points.</p>
+
+    <div id="input-section">
+        <div class="input-group">
+            <label for="pviStation">PVI Station:</label>
+            <input type="number" id="pviStation" step="any">
+            <span>ft</span>
+        </div>
+        <div class="input-group">
+            <label for="pviElevation">PVI Elevation:</label>
+            <input type="number" id="pviElevation" step="any">
+            <span>ft</span>
+        </div>
+        <div class="input-group">
+            <label for="gradeIn">Incoming Grade (G1):</label>
+            <input type="number" id="gradeIn" step="any">
+            <span>%</span>
+        </div>
+        <div class="input-group">
+            <label for="gradeOut">Outgoing Grade (G2):</label>
+            <input type="number" id="gradeOut" step="any">
+            <span>%</span>
+        </div>
+        <div class="input-group">
+            <label for="curveLength">Curve Length (L):</label>
+            <input type="number" id="curveLength" step="any">
+            <span>ft</span>
+        </div>
+
+        <button onclick="calculateCurve()">Calculate Parameters</button>
+        <div id="error-message" class="error"></div>
+    </div>
+
+    <div id="results" style="display: none;">
+        <h2>Calculated Results</h2>
+        <p><span class="result-label">Algebraic Difference (A):</span> <span id="resultA"></span> %</p>
+        <p><span class="result-label">PVC Station:</span> <span id="resultPvcSta"></span> ft</p>
+        <p><span class="result-label">PVC Elevation:</span> <span id="resultPvcElev"></span> ft</p>
+        <p><span class="result-label">PVT Station:</span> <span id="resultPvtSta"></span> ft</p>
+        <p><span class="result-label">PVT Elevation:</span> <span id="resultPvtElev"></span> ft</p>
+        <hr>
+        <div id="highLowPointInfo">
+            <p><span class="result-label">Curve Type:</span> <span id="resultCurveType"></span></p>
+            <p><span class="result-label" id="highLowLabel">High/Low Point Status:</span> <span id="resultHighLowStatus"></span></p>
+            <p class="highlight"><span class="result-label" id="highLowStationLabel">High/Low Point Station:</span> <span id="resultHighLowSta"></span></p>
+            <p class="highlight"><span class="result-label" id="highLowElevationLabel">High/Low Point Elevation:</span> <span id="resultHighLowElev"></span></p>
+        </div>
+    </div>
+
+    <footer>Based on AASHTO/FHWA formulas for symmetrical parabolic curves.</footer>
+</div>
+
+<script>
+    function formatStation(feet) {
+        // Optional: Format station as X+XX.XX
+        // const stations = Math.floor(feet / 100);
+        // const plus = (feet % 100).toFixed(2);
+        // return `${stations}+${plus.padStart(5, '0')}`;
+        return feet.toFixed(2); // Keep as feet for simplicity
+    }
+
+    function calculateCurve() {
+        // Clear previous errors and results
+        document.getElementById('error-message').innerText = '';
+        document.getElementById('results').style.display = 'none';
+
+        // Get input values
+        const pviSta = parseFloat(document.getElementById('pviStation').value);
+        const pviElev = parseFloat(document.getElementById('pviElevation').value);
+        const g1 = parseFloat(document.getElementById('gradeIn').value);
+        const g2 = parseFloat(document.getElementById('gradeOut').value);
+        const L = parseFloat(document.getElementById('curveLength').value);
+
+        // --- Input Validation ---
+        let errors = [];
+        if (isNaN(pviSta)) errors.push("PVI Station");
+        if (isNaN(pviElev)) errors.push("PVI Elevation");
+        if (isNaN(g1)) errors.push("Incoming Grade (G1)");
+        if (isNaN(g2)) errors.push("Outgoing Grade (G2)");
+        if (isNaN(L)) errors.push("Curve Length (L)");
+
+        if (errors.length > 0) {
+            document.getElementById('error-message').innerText = `Error: Invalid input for ${errors.join(', ')}. Please enter numeric values.`;
+            return;
+        }
+        if (L <= 0) {
+             document.getElementById('error-message').innerText = `Error: Curve Length (L) must be positive.`;
+             return;
+        }
+        if (g1 === g2) {
+             document.getElementById('error-message').innerText = `Warning: Grades are equal (G1 = G2 = ${g1}%). This is a tangent, not a vertical curve. Calculations assume a straight grade.`;
+             // Still show basic info if desired, but no high/low point from curve.
+             // Let's proceed but indicate no high/low point due to curvature.
+        }
+
+        // --- Calculations ---
+        const A = g2 - g1; // Algebraic difference (sign matters!)
+        const absA = Math.abs(A); // Absolute difference for K-value etc. (not explicitly asked for but good to have)
+
+        const pvcSta = pviSta - L / 2;
+        const pvtSta = pviSta + L / 2;
+
+        const pvcElev = pviElev - (g1 / 100) * (L / 2);
+        const pvtElev = pviElev + (g2 / 100) * (L / 2);
+
+
+        let highLowSta = NaN;
+        let highLowElev = NaN;
+        let highLowStatus = "N/A";
+        let curveType = "Tangent (G1 = G2)";
+        let pointType = "Extremum"; // Default label
+
+        if (A !== 0) { // Only calculate high/low points if there is a curve (G1 != G2)
+             // Determine curve type
+             curveType = A < 0 ? "Crest" : "Sag";
+             pointType = A < 0 ? "High Point" : "Low Point";
+
+             // Calculate distance from PVC to high/low point
+             const x_hl = -g1 * L / A;
+
+             // Check if the high/low point is within the curve limits
+             if (x_hl >= 0 && x_hl <= L) {
+                 highLowSta = pvcSta + x_hl;
+                 // Calculate elevation at high/low point using the curve formula:
+                 // Y = PVC_Elev + (G1/100)*x + (A / (200 * L)) * x^2
+                 highLowElev = pvcElev + (g1 / 100) * x_hl + (A / (200 * L)) * Math.pow(x_hl, 2);
+                 highLowStatus = `${pointType} occurs ON the curve.`;
+             } else if (x_hl < 0) {
+                  highLowStatus = `${pointType} occurs BEFORE the PVC (tangent continues).`;
+             } else { // x_hl > L
+                  highLowStatus = `${pointType} occurs AFTER the PVT (tangent continues).`;
+             }
+        } else {
+            // G1 === G2 case
+            highLowStatus = `No ${pointType} due to curvature (grades are equal).`;
+            document.getElementById('highLowPointInfo').style.display = 'none'; // Hide specific high/low results section
+        }
+
+
+        // --- Display Results ---
+        document.getElementById('results').style.display = 'block';
+
+        document.getElementById('resultA').innerText = A.toFixed(3);
+        document.getElementById('resultPvcSta').innerText = formatStation(pvcSta);
+        document.getElementById('resultPvcElev').innerText = pvcElev.toFixed(3);
+        document.getElementById('resultPvtSta').innerText = formatStation(pvtSta);
+        document.getElementById('resultPvtElev').innerText = pvtElev.toFixed(3);
+
+        // Display High/Low Point Info (even if off-curve)
+        const hlSection = document.getElementById('highLowPointInfo');
+        if (A !== 0) {
+            hlSection.style.display = 'block'; // Ensure it's visible if A is not 0
+            document.getElementById('resultCurveType').innerText = curveType;
+            document.getElementById('highLowLabel').innerText = `${pointType} Status:`;
+            document.getElementById('resultHighLowStatus').innerText = highLowStatus;
+
+            const staLabel = document.getElementById('highLowStationLabel');
+            const elevLabel = document.getElementById('highLowElevationLabel');
+            const staValue = document.getElementById('resultHighLowSta');
+            const elevValue = document.getElementById('resultHighLowElev');
+
+            staLabel.innerText = `${pointType} Station:`;
+            elevLabel.innerText = `${pointType} Elevation:`;
+
+            if (!isNaN(highLowSta)) {
+                staValue.innerText = formatStation(highLowSta);
+                elevValue.innerText = highLowElev.toFixed(3);
+                staValue.parentElement.style.display = 'block'; // Show row
+                elevValue.parentElement.style.display = 'block'; // Show row
+            } else {
+                 // Hide the station/elevation values if not applicable (or off curve)
+                staValue.innerText = "---";
+                elevValue.innerText = "---";
+                 // Optionally hide the specific result lines if the point is off-curve
+                 // staValue.parentElement.style.display = 'none';
+                 // elevValue.parentElement.style.display = 'none';
+            }
+        } else {
+             // Hide high/low details if G1=G2
+             hlSection.style.display = 'none';
+        }
+    }
+
+    // --- Example ---
+    // Set example values on page load for demonstration
+    window.onload = function() {
+        document.getElementById('pviStation').value = 1000; // Example: Sta 10+00
+        document.getElementById('pviElevation').value = 100;
+        document.getElementById('gradeIn').value = 2;     // Example: +2%
+        document.getElementById('gradeOut').value = -3;    // Example: -3%
+        document.getElementById('curveLength').value = 400; // Example: 400 ft curve
+    };
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vertical Curve Calculator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        h2 {
+            color: #3498db;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #3498db;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .results {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border-left: 5px solid #3498db;
+        }
+        .result-item {
+            margin-bottom: 10px;
+        }
+        .result-label {
+            font-weight: bold;
+            display: inline-block;
+            width: 150px;
+        }
+        .result-value {
+            font-family: monospace;
+            font-size: 16px;
+        }
+        .critical-point {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .note {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            font-style: italic;
+            margin-top: 5px;
+        }
+        /* Removed curve diagram styles */
+        .load-example {
+            background-color: #2ecc71;
+            margin-right: 10px;
+        }
+        .load-example:hover {
+            background-color: #27ae60;
+        }
+        .clear-form {
+            background-color: #e74c3c;
+        }
+        .clear-form:hover {
+            background-color: #c0392b;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Vertical Curve Calculator</h1>
+        <p>Calculate the critical point (high/low point) for a single vertical curve</p>
+        
+        <div class="button-group">
+            <button id="load-example" class="load-example">Load Example Data</button>
+            <button id="clear-form" class="clear-form">Clear Form</button>
+        </div>
+        
+        <h2>Vertical Curve Input</h2>
+        <form id="curve-form">
+            <div class="form-group">
+                <label for="vpi-station">VPI Station</label>
+                <input type="text" id="vpi-station" placeholder="e.g., 30+10" required>
+                <div class="note">Enter in format like 30+10.00 or 30+10.50 (always use 2 decimal places)</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="vpi-elevation">VPI Elevation (ft)</label>
+                <input type="number" id="vpi-elevation" step="0.01" placeholder="e.g., 17.66" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="curve-length">Vertical Curve Length (ft)</label>
+                <input type="number" id="curve-length" step="1" min="0" placeholder="e.g., 60" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="grade-in">Grade In (%)</label>
+                <input type="number" id="grade-in" step="0.01" placeholder="e.g., -0.35" required>
+                <div class="note">Use negative values for downhill grades (e.g., -0.35 for -0.35%)</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="grade-out">Grade Out (%)</label>
+                <input type="number" id="grade-out" step="0.01" placeholder="e.g., 0.30" required>
+                <div class="note">Use positive values for uphill grades (e.g., 0.30 for 0.30%)</div>
+            </div>
+            
+            <button type="button" id="calculate-btn">Calculate Curve</button>
+        </form>
+        
+        <div id="results" class="results" style="display: none;">
+            <h2>Calculation Results</h2>
+            
+            <div class="result-item">
+                <span class="result-label">Curve Type:</span>
+                <span class="result-value" id="curve-type"></span>
+            </div>
+            
+            <div class="result-item">
+                <span class="result-label">K Value:</span>
+                <span class="result-value" id="k-value"></span>
+            </div>
+            
+            <div class="result-item">
+                <span class="result-label">PVC Station:</span>
+                <span class="result-value" id="pvc-station"></span>
+            </div>
+            
+            <div class="result-item">
+                <span class="result-label">PVC Elevation:</span>
+                <span class="result-value" id="pvc-elevation"></span>
+            </div>
+            
+            <div class="result-item">
+                <span class="result-label">PVT Station:</span>
+                <span class="result-value" id="pvt-station"></span>
+            </div>
+            
+            <div class="result-item">
+                <span class="result-label">PVT Elevation:</span>
+                <span class="result-value" id="pvt-elevation"></span>
+            </div>
+            
+            <div class="result-item critical-point">
+                <span class="result-label" id="critical-point-label"></span>
+                <span class="result-value" id="critical-point-station"></span>
+            </div>
+            
+            <div class="result-item critical-point">
+                <span class="result-label" id="critical-point-elev-label"></span>
+                <span class="result-value" id="critical-point-elevation"></span>
+            </div>
+        </div>
+        
+        <!-- Visualization chart removed to eliminate errors -->
+    </div>
+    
+    <script>
+        // Utility function to parse station format (e.g., "30+10" to 3010)
+        function parseStation(stationStr) {
+            // Handle both "30+10" and "30+10.50" formats
+            const parts = stationStr.split('+');
+            if (parts.length !== 2) throw new Error("Station format should be like '30+10' or '30+10.50'");
+            
+            const stations = parseFloat(parts[0]) * 100;
+            const feet = parseFloat(parts[1]);
+            return stations + feet;
+        }
+        
+        // Utility function to format station from decimal to format (e.g., 3010 to "30+10.00")
+        function formatStation(stationDecimal) {
+            const stations = Math.floor(stationDecimal / 100);
+            const feet = stationDecimal % 100;
+            
+            // Always format with 2 decimal places
+            const feetStr = feet.toFixed(2);
+            
+            // Ensure feet has leading zero if less than 10
+            return `${stations}+${feet < 10 ? '0' : ''}${feetStr}`;
+        }
+        
+        // Initialize event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('calculate-btn').addEventListener('click', calculateCurve);
+            document.getElementById('load-example').addEventListener('click', loadExampleData);
+            document.getElementById('clear-form').addEventListener('click', clearForm);
+        });
+        
+        // Function to load example data
+        function loadExampleData() {
+            // Using the data from your example image
+            document.getElementById('vpi-station').value = '30+10.00';
+            document.getElementById('vpi-elevation').value = '17.66';
+            document.getElementById('curve-length').value = '60';
+            document.getElementById('grade-in').value = '-0.35';
+            document.getElementById('grade-out').value = '0.30';
+        }
+        
+        // Function to clear the form
+        function clearForm() {
+            document.getElementById('curve-form').reset();
+            document.getElementById('results').style.display = 'none';
+            // Visualization elements have been removed
+        }
+        
+        // Function to calculate the vertical curve
+        function calculateCurve() {
+            try {
+                // Get input values
+                const vpiStationStr = document.getElementById('vpi-station').value.trim();
+                const vpiElevation = parseFloat(document.getElementById('vpi-elevation').value);
+                const curveLength = parseFloat(document.getElementById('curve-length').value);
+                const gradeIn = parseFloat(document.getElementById('grade-in').value) / 100; // Convert to decimal
+                const gradeOut = parseFloat(document.getElementById('grade-out').value) / 100; // Convert to decimal
+                
+                // Validate inputs
+                if (isNaN(vpiElevation) || isNaN(curveLength) || isNaN(gradeIn) || isNaN(gradeOut)) {
+                    throw new Error("All input values must be valid numbers");
+                }
+                
+                if (curveLength <= 0) {
+                    throw new Error("Curve length must be greater than zero");
+                }
+                
+                // Parse VPI station
+                const vpiStation = parseStation(vpiStationStr);
+                
+                // Calculate curve parameters
+                const A = gradeOut - gradeIn; // Algebraic difference in grades
+                const kValue = Math.abs(curveLength / (A * 100)); // K value
+                
+                // Calculate PVC (beginning of curve)
+                const pvcStation = vpiStation - (curveLength / 2);
+                const pvcElevation = vpiElevation - (gradeIn * curveLength / 2);
+                
+                // Calculate PVT (end of curve)
+                const pvtStation = vpiStation + (curveLength / 2);
+                const pvtElevation = vpiElevation + (gradeOut * curveLength / 2);
+                
+                // Determine curve type
+                const curveType = A > 0 ? "Sag (Valley)" : "Crest (Hill)";
+                
+                // Calculate critical point (high/low point) if grades change sign
+                let criticalPointFound = false;
+                let criticalStation, criticalElevation;
+                
+                if (gradeIn * gradeOut <= 0 || (gradeIn < 0 && gradeOut > 0) || (gradeIn > 0 && gradeOut < 0)) {
+                    // The grades change sign or one of them is zero, so there's a critical point
+                    criticalPointFound = true;
+                    
+                    // Calculate distance from PVC to critical point
+                    const x = -gradeIn * curveLength / A;
+                    
+                    // Calculate critical point station
+                    criticalStation = pvcStation + x;
+                    
+                    // Calculate elevation at critical point using curve equation
+                    criticalElevation = pvcElevation + (gradeIn * x) + (A * Math.pow(x, 2) / (2 * curveLength));
+                }
+                
+                // Display results
+                document.getElementById('curve-type').textContent = curveType;
+                document.getElementById('k-value').textContent = kValue.toFixed(2);
+                document.getElementById('pvc-station').textContent = formatStation(pvcStation);
+                document.getElementById('pvc-elevation').textContent = pvcElevation.toFixed(2) + ' ft';
+                document.getElementById('pvt-station').textContent = formatStation(pvtStation);
+                document.getElementById('pvt-elevation').textContent = pvtElevation.toFixed(2) + ' ft';
+                
+                // Display critical point if found
+                if (criticalPointFound) {
+                    const pointType = A > 0 ? "LOW POINT STA." : "HIGH POINT STA.";
+                    const pointElevType = A > 0 ? "LOW POINT ELEV." : "HIGH POINT ELEV.";
+                    
+                    document.getElementById('critical-point-label').textContent = pointType;
+                    document.getElementById('critical-point-station').textContent = formatStation(criticalStation);
+                    document.getElementById('critical-point-elev-label').textContent = pointElevType;
+                    document.getElementById('critical-point-elevation').textContent = criticalElevation.toFixed(2) + ' ft';
+                } else {
+                    document.getElementById('critical-point-label').textContent = "Critical Point:";
+                    document.getElementById('critical-point-station').textContent = "None found within curve";
+                    document.getElementById('critical-point-elev-label').textContent = "Critical Elevation:";
+                    document.getElementById('critical-point-elevation').textContent = "N/A";
+                }
+                
+                // Show results
+                document.getElementById('results').style.display = 'block';
+                // Visualization has been removed to fix errors
+                
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+                console.error(error);
+            }
+        }
+        
+        // Visualization function has been removed to eliminate errors
+    </script>
+</body>
+</html>

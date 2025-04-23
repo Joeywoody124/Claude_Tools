@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Box Culvert Flow Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        .container {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: inline-block;
+            width: 200px;
+            font-weight: bold;
+        }
+        input, select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #results {
+            margin-top: 20px;
+            display: none;
+        }
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .result-table th, .result-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .result-table th {
+            background-color: #f2f2f2;
+        }
+        .result-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .equation-box {
+            background-color: #f0f8ff;
+            border: 1px solid #add8e6;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            font-style: italic;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .hidden {
+            display: none;
+        }
+        #exportBtn {
+            background-color: #27ae60;
+        }
+        #exportBtn:hover {
+            background-color: #219653;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #ddd;
+            border: 1px solid #ccc;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: #f9f9f9;
+            border-bottom: 1px solid #f9f9f9;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>Box Culvert Flow Calculator</h1>
+    <p>This tool calculates the relationship between velocity and depth for a box culvert using Manning's equation, helping calibrate tidal data by establishing elevation corrections.</p>
+
+    <div class="tabs">
+        <div class="tab active" data-tab="calculator">Calculator</div>
+        <div class="tab" data-tab="documentation">Documentation</div>
+    </div>
+
+    <div id="calculator" class="tab-content active">
+        <div class="container">
+            <h2>Culvert Parameters</h2>
+            <div class="input-group">
+                <label for="culvertWidth">Culvert Width (ft):</label>
+                <input type="number" id="culvertWidth" value="5" step="0.01">
+            </div>
+            <div class="input-group">
+                <label for="culvertHeight">Culvert Height (ft):</label>
+                <input type="number" id="culvertHeight" value="5" step="0.01">
+            </div>
+            <div class="input-group">
+                <label for="sedimentDepth">Sediment Depth (inches):</label>
+                <input type="number" id="sedimentDepth" value="7" step="0.1">
+            </div>
+            <div class="input-group">
+                <label for="invertElevation">Invert Elevation (ft):</label>
+                <input type="number" id="invertElevation" value="3.71" step="0.01">
+            </div>
+            <div class="input-group">
+                <label for="manningsN">Manning's Roughness (n):</label>
+                <input type="number" id="manningsN" value="0.015" step="0.001" min="0.001">
+            </div>
+            <div class="input-group">
+                <label for="culvertSlope">Culvert Slope (ft/ft):</label>
+                <input type="number" id="culvertSlope" value="0.001" step="0.0001" min="0.0001">
+            </div>
+        </div>
+
+        <div class="container">
+            <h2>Generate Velocity-Depth Table</h2>
+            <div class="input-group">
+                <label for="depthIncrement">Depth Increment (ft):</label>
+                <input type="number" id="depthIncrement" value="0.25" step="0.01" min="0.01">
+            </div>
+            
+            <button id="calculateBtn">Generate Table</button>
+            <button id="exportBtn">Export to CSV</button>
+        </div>
+
+        <div id="results" class="container">
+            <h2>Results Table</h2>
+            <p>Table showing the relationship between depth and velocity for your culvert:</p>
+            <table id="resultTable" class="result-table">
+                <thead>
+                    <tr>
+                        <th>Depth (ft)</th>
+                        <th>Water Surface Elevation (ft)</th>
+                        <th>Velocity (ft/s)</th>
+                        <th>Hydraulic Radius (ft)</th>
+                        <th>Flow Area (ft²)</th>
+                        <th>Flow Rate (cfs)</th>
+                    </tr>
+                </thead>
+                <tbody id="resultTableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="documentation" class="tab-content">
+        <div class="container">
+            <h2>Manning's Equation and Box Culvert Hydraulics</h2>
+            
+            <h3>Manning's Equation</h3>
+            <p>Manning's equation is used to calculate the velocity of open-channel flow:</p>
+            <div class="equation-box">
+                V = (1.49/n) × R<sup>2/3</sup> × S<sup>1/2</sup>
+            </div>
+            <p>Where:</p>
+            <ul>
+                <li><strong>V</strong> = velocity (ft/s)</li>
+                <li><strong>n</strong> = Manning's roughness coefficient</li>
+                <li><strong>R</strong> = hydraulic radius (ft) = Area / Wetted Perimeter</li>
+                <li><strong>S</strong> = slope of the energy grade line (ft/ft)</li>
+            </ul>
+            
+            <h3>Box Culvert Geometry</h3>
+            <p>For a partially filled box culvert with sediment:</p>
+            <ul>
+                <li><strong>Width (w)</strong> = width of the culvert (ft)</li>
+                <li><strong>Effective Height</strong> = culvert height - sediment depth</li>
+                <li><strong>Flow Area (A)</strong> = w × d (where d is water depth above sediment)</li>
+                <li><strong>Wetted Perimeter (P)</strong> = w + 2d</li>
+                <li><strong>Hydraulic Radius (R)</strong> = A / P = (w × d) / (w + 2d)</li>
+            </ul>
+            
+            <h3>Solving for Depth from Velocity</h3>
+            <p>This tool uses an iterative approach to solve Manning's equation for depth when velocity is known:</p>
+            <ol>
+                <li>Rearranging Manning's equation: R<sup>2/3</sup> = (V × n) / (1.49 × S<sup>1/2</sup>)</li>
+                <li>For a given velocity, we calculate the required hydraulic radius</li>
+                <li>We then solve for the depth that gives this hydraulic radius</li>
+                <li>For a box culvert: d = P × R / (w - 2R)</li>
+            </ol>
+            
+            <h3>Manning's Roughness Coefficient (n)</h3>
+            <p>Typical values for concrete box culverts:</p>
+            <ul>
+                <li>Smooth concrete: 0.012 - 0.014</li>
+                <li>Normal concrete: 0.015 - 0.017</li>
+                <li>Rough concrete: 0.017 - 0.020</li>
+                <li>Concrete with sediment: 0.020 - 0.025</li>
+            </ul>
+            
+            <h3>Limitations</h3>
+            <p>Important considerations when using this tool:</p>
+            <ul>
+                <li>Manning's equation assumes steady, uniform flow</li>
+                <li>Tidal environments often have unsteady, non-uniform flow</li>
+                <li>Backwater effects may influence the accuracy of results</li>
+                <li>The tool doesn't account for entrance/exit losses</li>
+                <li>Results are most accurate when flow is not near capacity</li>
+            </ul>
+            
+            <h3>Using the Results for Tidal Calibration</h3>
+            <p>To establish elevation corrections for tidal data:</p>
+            <ol>
+                <li>Use this table to find the water surface elevation that corresponds to your measured velocity</li>
+                <li>Compare these calculated elevations with your HOBO gauge pressure data</li>
+                <li>Calculate the constant offset needed to align the data sets</li>
+                <li>Apply this offset to your tidal boundary conditions in your model</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab functionality
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabName = this.getAttribute('data-tab');
+                    
+                    // Set active tab
+                    tabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Show active content
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    document.getElementById(tabName).classList.add('active');
+                });
+            });
+            
+            // Calculate button functionality
+            document.getElementById('calculateBtn').addEventListener('click', function() {
+                const culvertWidth = parseFloat(document.getElementById('culvertWidth').value);
+                const culvertHeight = parseFloat(document.getElementById('culvertHeight').value);
+                const sedimentDepthInches = parseFloat(document.getElementById('sedimentDepth').value);
+                const sedimentDepth = sedimentDepthInches / 12; // Convert inches to feet
+                const invertElevation = parseFloat(document.getElementById('invertElevation').value);
+                const manningsN = parseFloat(document.getElementById('manningsN').value);
+                const culvertSlope = parseFloat(document.getElementById('culvertSlope').value);
+                
+                const effectiveHeight = culvertHeight - sedimentDepth;
+                const sedimentElevation = invertElevation + sedimentDepth;
+                
+                // Generate table
+                const depthIncrement = parseFloat(document.getElementById('depthIncrement').value);
+                const maxDepth = effectiveHeight;
+                const tableBody = document.getElementById('resultTableBody');
+                
+                // Clear previous results
+                tableBody.innerHTML = '';
+                
+                // Generate table rows
+                let depths = [];
+                let currentDepth = depthIncrement;
+                
+                while (currentDepth <= maxDepth) {
+                    depths.push(currentDepth);
+                    currentDepth += depthIncrement;
+                }
+                
+                depths.forEach(depth => {
+                    const area = culvertWidth * depth;
+                    const wettedPerimeter = culvertWidth + 2 * depth;
+                    const hydraulicRadius = area / wettedPerimeter;
+                    const velocity = (1.49 / manningsN) * Math.pow(hydraulicRadius, 2/3) * Math.sqrt(culvertSlope);
+                    const flowRate = area * velocity;
+                    const waterSurfaceElevation = sedimentElevation + depth;
+                    
+                    const row = document.createElement('tr');
+                    
+                    // Create and add cells to the row
+                    const createCell = (value, decimals) => {
+                        const cell = document.createElement('td');
+                        cell.textContent = value.toFixed(decimals);
+                        return cell;
+                    };
+                    
+                    row.appendChild(createCell(depth, 3));
+                    row.appendChild(createCell(waterSurfaceElevation, 3));
+                    row.appendChild(createCell(velocity, 3));
+                    row.appendChild(createCell(hydraulicRadius, 3));
+                    row.appendChild(createCell(area, 2));
+                    row.appendChild(createCell(flowRate, 2));
+                    
+                    tableBody.appendChild(row);
+                });
+                
+                document.getElementById('results').style.display = 'block';
+            });
+            
+            // Export to CSV functionality
+            document.getElementById('exportBtn').addEventListener('click', function() {
+                const table = document.getElementById('resultTable');
+                let csv = [];
+                
+                // Get headers
+                const headers = [];
+                const headerCells = table.querySelectorAll('thead th');
+                headerCells.forEach(cell => {
+                    headers.push('"' + cell.textContent + '"');
+                });
+                csv.push(headers.join(','));
+                
+                // Get data rows
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const data = [];
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach(cell => {
+                        data.push('"' + cell.textContent + '"');
+                    });
+                    csv.push(data.join(','));
+                });
+                
+                // Download CSV file
+                const csvContent = 'data:text/csv;charset=utf-8,' + csv.join('\n');
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement('a');
+                link.setAttribute('href', encodedUri);
+                link.setAttribute('download', 'culvert_velocity_depth_table.csv');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        });
+    </script>
+</body>
+</html>

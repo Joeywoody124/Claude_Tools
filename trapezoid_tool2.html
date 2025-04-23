@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trapezoidal Cross Section Generator</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 25px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        label { display: block; margin-bottom: 6px; font-weight: bold; color: #333; }
+        input[type="number"], input[type="file"], textarea {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 18px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 150px;
+            font-family: monospace;
+        }
+        input[type="file"] { padding: 8px 0; }
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 15px;
+            transition: background-color 0.2s ease;
+        }
+        button:hover { background-color: #0056b3; }
+        #output { margin-top: 25px; border-top: 1px solid #ccc; padding-top: 20px; }
+        #resultsTable { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        #resultsTable th, #resultsTable td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        #resultsTable th { background-color: #f2f2f2; font-weight: bold; }
+        .data-output {
+            width: 100%; 
+            height: 150px; 
+            padding: 10px;
+            border: 1px solid #ccc; 
+            border-radius: 4px;
+            resize: vertical; 
+            font-family: monospace;
+            white-space: pre; 
+            overflow-wrap: normal; 
+            overflow-x: auto;
+            margin-bottom: 10px; 
+            background-color: #fdfdfd;
+        }
+        #plotContainer { margin-top: 25px; border-top: 1px solid #eee; padding-top: 20px; }
+        #crossSectionSvg {
+            width: 100%; 
+            height: 350px; 
+            border: 1px solid #eee;
+            border-radius: 4px; 
+            background-color: #fdfdfd;
+            display: block; 
+            margin: 0 auto;
+        }
+        .input-group { 
+            margin-bottom: 25px; 
+            padding: 20px; 
+            border: 1px solid #e0e0e0; 
+            border-radius: 5px; 
+            background-color: #f9f9f9; 
+        }
+        .input-group h4 { 
+            margin-top: 0; 
+            color: #0056b3; 
+            border-bottom: 1px solid #eee; 
+            padding-bottom: 8px; 
+            margin-bottom: 15px; 
+        }
+        .section-line { stroke: #007bff; stroke-width: 2; fill: none; }
+        .section-point { fill: #007bff; }
+        .grid-line { stroke: #e0e0e0; stroke-width: 1; }
+        .axis-label { font-family: sans-serif; font-size: 12px; fill: #666; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Trapezoidal Cross Section Generator</h2>
+
+    <div class="input-group">
+        <h4>Process Single Section</h4>
+        <label for="depth">Depth (e.g., 2):</label>
+        <input type="number" id="depth" value="2" step="any" required>
+        <label for="bottomWidth">Bottom Width (e.g., 4):</label>
+        <input type="number" id="bottomWidth" value="4" step="any" min="0" required>
+        <label for="leftSlope">Left Side Slope (H:1V, e.g., 3 for 3:1):</label>
+        <input type="number" id="leftSlope" value="3" step="any" min="0" required>
+        <label for="rightSlope">Right Side Slope (H:1V, e.g., 3 for 3:1):</label>
+        <input type="number" id="rightSlope" value="3" step="any" min="0" required>
+        <label for="refElevation">Reference Bottom Elevation (e.g., 100):</label>
+        <input type="number" id="refElevation" value="100" step="any" required>
+        <label for="sectionId">Section ID:</label>
+        <input type="text" id="sectionId" value="Section1" required>
+        <button onclick="generateSingleSection()">Generate Section Points & Plot</button>
+    </div>
+
+    <div class="input-group">
+        <h4>Process Multiple Sections from CSV</h4>
+        <p style="font-size: 0.9em; color: #555;">CSV must contain columns: "Section ID", "Reference Elevation", "Depth (ft)", "Bottom width (ft)", "Left side slope (x:1)", "Right side slope (x:1)"</p>
+        <label for="csvFile">Upload CSV File:</label>
+        <input type="file" id="csvFile" accept=".csv">
+        <button onclick="processCsvFile()">Process CSV and Generate All Points</button>
+    </div>
+
+    <div class="input-group">
+        <h4>Input Points Directly</h4>
+        <label for="directInput">Enter points as "Offset Elevation" pairs (one per line):</label>
+        <textarea id="directInput" placeholder="0 102&#10;6 100&#10;10 100&#10;16 102"></textarea>
+        <label for="directInputId">Section ID:</label>
+        <input type="text" id="directInputId" value="DirectSection" required>
+        <button onclick="processDirectInput()">Generate from Points</button>
+    </div>
+
+    <div id="output" class="hidden">
+        <h3 id="resultsHeader">Section Points</h3>
+        <table id="resultsTable">
+            <thead><tr><th>Section ID</th><th>Point</th><th>Offset (ft)</th><th>Elevation (ft)</th></tr></thead>
+            <tbody></tbody>
+        </table>
+        <div id="plotContainer">
+            <h3>Cross Section Plot</h3>
+            <svg id="crossSectionSvg"></svg>
+            <button onclick="downloadSvg()">Download SVG</button>
+        </div>
+        <h3>Output Formats</h3>
+        <h4>SWMM Format</h4>
+        <textarea id="swmmOutput" class="data-output" readonly></textarea>
+        <button onclick="downloadDat()">Download SWMM Format (.dat)</button>
+        <h4>Points Format</h4>
+        <textarea id="pointsOutput" class="data-output" readonly></textarea>
+        <button onclick="downloadPoints()">Download Points Format (.txt)</button>
+    </div>
+</div>
+
+<script>
+    function createPlot(points, sectionId) {
+        const svg = document.getElementById('crossSectionSvg');
+        svg.innerHTML = '';
+        
+        if (!points || points.length < 2) {
+            svg.innerHTML = '<text x="50%" y="50%" text-anchor="middle">Not enough points to plot</text>';
+            return;
+        }
+
+        const svgWidth = svg.clientWidth || 800;
+        const svgHeight = svg.clientHeight || 350;
+        const margin = { top: 30, right: 30, bottom: 50, left: 60 };
+        const width = svgWidth - margin.left - margin.right;
+        const height = svgHeight - margin.top - margin.bottom;
+
+        // Calculate ranges
+        const xValues = points.map(p => p.offset);
+        const yValues = points.map(p => p.elevation);
+        const xMin = 0;
+        const xMax = Math.max(...xValues) * 1.1;
+        const yMin = Math.min(...yValues) * 0.99;
+        const yMax = Math.max(...yValues) * 1.01;
+
+        // Scale functions
+        const xScale = (x) => margin.left + (x - xMin) * (width / (xMax - xMin));
+        const yScale = (y) => margin.top + height - (y - yMin) * (height / (yMax - yMin));
+
+        // Grid lines
+        const gridGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        for (let x = Math.floor(xMin); x <= xMax; x += 2) {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', xScale(x));
+            line.setAttribute('y1', margin.top);
+            line.setAttribute('x2', xScale(x));
+            line.setAttribute('y2', height + margin.top);
+            line.setAttribute('class', 'grid-line');
+            gridGroup.appendChild(line);
+        }
+        for (let y = Math.floor(yMin); y <= yMax; y += 0.5) {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', margin.left);
+            line.setAttribute('y1', yScale(y));
+            line.setAttribute('x2', width + margin.left);
+            line.setAttribute('y2', yScale(y));
+            line.setAttribute('class', 'grid-line');
+            gridGroup.appendChild(line);
+        }
+        svg.appendChild(gridGroup);
+
+        // Create section line
+        const pathData = points.map((p, i) => 
+            (i === 0 ? 'M' : 'L') + `${xScale(p.offset)},${yScale(p.elevation)}`
+        ).join(' ');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', pathData);
+        path.setAttribute('class', 'section-line');
+        svg.appendChild(path);
+
+        // Add points
+        points.forEach(pt => {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', xScale(pt.offset));
+            circle.setAttribute('cy', yScale(pt.elevation));
+            circle.setAttribute('r', 4);
+            circle.setAttribute('class', 'section-point');
+            svg.appendChild(circle);
+        });
+
+        // Axes labels
+        const xLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        xLabel.setAttribute('x', margin.left + width / 2);
+        xLabel.setAttribute('y', svgHeight - 10);
+        xLabel.setAttribute('text-anchor', 'middle');
+        xLabel.setAttribute('class', 'axis-label');
+        xLabel.textContent = 'Offset (ft)';
+        svg.appendChild(xLabel);
+
+        const yLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        yLabel.setAttribute('x', -svgHeight/2);
+        yLabel.setAttribute('y', margin.left/3);
+        yLabel.setAttribute('transform', 'rotate(-90)');
+        yLabel.setAttribute('text-anchor', 'middle');
+        yLabel.setAttribute('class', 'axis-label');
+        yLabel.textContent = 'Elevation (ft)';
+        svg.appendChild(yLabel);
+
+        // Title
+        const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        title.setAttribute('x', svgWidth / 2);
+        title.setAttribute('y', margin.top - 10);
+        title.setAttribute('text-anchor', 'middle');
+        title.setAttribute('class', 'axis-label');
+        title.textContent = `Cross Section: ${sectionId}`;
+        svg.appendChild(title);
+    }
+
+    function displayPoints(points, sectionId) {
+        const tbody = document.querySelector('#resultsTable tbody');
+        tbody.innerHTML = '';
+        points.forEach((pt, i) => {
+            const row = tbody.insertRow();
+            row.insertCell(0).textContent = sectionId;
+            row.insertCell(1).textContent = `Point ${i+1}`;
+            row.insertCell(2).textContent = pt.offset.toFixed(2);
+            row.insertCell(3).textContent = pt.elevation.toFixed(2);
+        });
+        document.getElementById('output').classList.remove('hidden');
+
+        // Generate SWMM format output
+        const swmmOutput = `Link\t${sectionId}\tXsection\tIRREG\t${points.length}\t${points.map(p => `${p.offset.toFixed(4)}\t${p.elevation.toFixed(4)}`).join('\t')}`;
+        document.getElementById('swmmOutput').value = swmmOutput;
+
+        // Generate points format output
+        const pointsOutput = points.map(p => `${p.offset.toFixed(2)} ${p.elevation.toFixed(2)}`).join('\n');
+        document.getElementById('pointsOutput').value = pointsOutput;
+    }
+
+    function generateSingleSection() {
+        const depth = parseFloat(document.getElementById('depth').value);
+        const bottomWidth = parseFloat(document.getElementById('bottomWidth').value);
+        const leftSlope = parseFloat(document.getElementById('leftSlope').value);
+        const rightSlope = parseFloat(document.getElementById('rightSlope').value);
+        const refElevation = parseFloat(document.getElementById('refElevation').value);
+        const sectionId = document.getElementById('sectionId').value;
+
+        if ([depth, bottomWidth, leftSlope, rightSlope, refElevation].some(isNaN)) {
+            alert('Please fill in all fields with valid numbers.');
+            return;
+        }
+
+        const points = [
+            { offset: 0, elevation: refElevation + depth },
+            { offset: leftSlope * depth, elevation: refElevation },
+            { offset: leftSlope * depth + bottomWidth, elevation: refElevation },
+            { offset: leftSlope * depth + bottomWidth + rightSlope * depth, elevation: refElevation + depth }
+        ];
+
+        displayPoints(points, sectionId);
+        createPlot(points, sectionId);
+    }
+
+    async function processCsvFile() {
+        const fileInput = document.getElementById('csvFile');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            alert('Please select a CSV file.');
+            return;
+        }
+
+        try {
+            const text = await file.text();
+            const rows = text.split('\n').map(row => row.split(',').map(cell => cell.trim()));
+            const headers = rows[0];
+            
+            // Find column indices
+            const idIndex = headers.findIndex(h => h.toLowerCase().includes('section id'));
+            const refElevIndex = headers.findIndex(h => h.toLowerCase().includes('reference elevation'));
+            const depthIndex = headers.findIndex(h => h.toLowerCase().includes('depth'));
+            const bottomWidthIndex = headers.findIndex(h => h.toLowerCase().includes('bottom width'));
+            const leftSlopeIndex = headers.findIndex(h => h.toLowerCase().includes('left side slope'));
+            const rightSlopeIndex = headers.findIndex(h => h.toLowerCase().includes('right side slope'));
+
+            if ([idIndex, refElevIndex, depthIndex, bottomWidthIndex, leftSlopeIndex, rightSlopeIndex].includes(-1)) {
+                alert('CSV must contain all required columns. Please check the format.');
+                return;
+            }
+
+            let allPoints = [];
+            let swmmOutput = '';
+            let pointsOutput = '';
+
+            for (let i = 1; i < rows.length; i++) {
+                if (rows[i].length !== headers.length) continue;
+
+                const sectionId = rows[i][idIndex];
+                const refElevation = parseFloat(rows[i][refElevIndex]);
+                const depth = parseFloat(rows[i][depthIndex]);
+                const bottomWidth = parseFloat(rows[i][bottomWidthIndex]);
+                const leftSlope = parseFloat(rows[i][leftSlopeIndex]);
+                const rightSlope = parseFloat(rows[i][rightSlopeIndex]);
+
+                const points = [
+                    { offset: 0, elevation: refElevation + depth },
+                    { offset: leftSlope * depth, elevation: refElevation },
+                    { offset: leftSlope * depth + bottomWidth, elevation: refElevation },
+                    { offset: leftSlope * depth + bottomWidth + rightSlope * depth, elevation: refElevation + depth }
+                ];
+
+                allPoints.push({ sectionId, points });
+                
+                // Add to SWMM output
+                swmmOutput += `Link\t${sectionId}\tXsection\tIRREG\t${points.length}\t${points.map(p => `${p.offset.toFixed(4)}\t${p.elevation.toFixed(4)}`).join('\t')}\n`;
+                
+                // Add to points output
+                pointsOutput += `Section: ${sectionId}\n${points.map(p => `${p.offset.toFixed(2)} ${p.elevation.toFixed(2)}`).join('\n')}\n\n`;
+            }
+
+            // Display the first section
+            if (allPoints.length > 0) {
+                displayPoints(allPoints[0].points, allPoints[0].sectionId);
+                createPlot(allPoints[0].points, allPoints[0].sectionId);
+            }
+
+            document.getElementById('swmmOutput').value = swmmOutput;
+            document.getElementById('pointsOutput').value = pointsOutput;
+            
+        } catch (error) {
+            alert('Error processing CSV file: ' + error.message);
+        }
+    }
+
+    function processDirectInput() {
+        const input = document.getElementById('directInput').value.trim();
+        const sectionId = document.getElementById('directInputId').value;
+
+        if (!input) {
+            alert('Please enter point data.');
+            return;
+        }
+
+        try {
+            const points = input.split('\n')
+                .map(line => line.trim())
+                .filter(line => line)
+                .map(line => {
+                    const [offset, elevation] = line.split(/\s+/).map(Number);
+                    if (isNaN(offset) || isNaN(elevation)) {
+                        throw new Error('Invalid point format');
+                    }
+                    return { offset, elevation };
+                });
+
+            if (points.length < 2) {
+                alert('Please enter at least 2 points.');
+                return;
+            }
+
+            displayPoints(points, sectionId);
+            createPlot(points, sectionId);
+        } catch (error) {
+            alert('Error processing input: ' + error.message);
+        }
+    }
+
+    function downloadSvg() {
+        const svg = document.getElementById('crossSectionSvg');
+        const serializer = new XMLSerializer();
+        const svgStr = serializer.serializeToString(svg);
+        const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'cross_section.svg';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function downloadDat() {
+        const content = document.getElementById('swmmOutput').value;
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'xsections.dat';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function downloadPoints() {
+        const content = document.getElementById('pointsOutput').value;
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'points.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+</script>
+
+</body>
+</html>

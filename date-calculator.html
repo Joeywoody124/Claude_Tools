@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Date Calculator Tool</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="p-6 max-w-2xl w-full bg-white rounded-xl shadow-md">
+        <h1 class="text-2xl font-bold mb-4 text-center">Date Calculator</h1>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Operation</label>
+                <select 
+                    id="operation"
+                    class="w-full border border-gray-300 rounded-md p-2"
+                >
+                    <option value="subtract">Subtract Dates</option>
+                    <option value="add" disabled>Add to Date (Coming Soon)</option>
+                </select>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="col-span-2 md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">First Date Input Method</label>
+                    <select 
+                        id="date1InputMethod"
+                        class="w-full border border-gray-300 rounded-md p-2"
+                        onchange="toggleDateInput(1)"
+                    >
+                        <option value="picker">Date Picker</option>
+                        <option value="manual">Manual Entry (MM/DD/YYYY)</option>
+                    </select>
+                </div>
+                
+                <div class="col-span-2 md:col-span-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" id="time1Label">First Time (optional)</label>
+                    <input 
+                        type="time" 
+                        id="time1"
+                        class="w-full border border-gray-300 rounded-md p-2"
+                    />
+                </div>
+                
+                <div id="date1PickerContainer" class="col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">First Date</label>
+                    <input 
+                        type="date" 
+                        id="date1Picker"
+                        class="w-full border border-gray-300 rounded-md p-2"
+                    />
+                </div>
+                
+                <div id="date1ManualContainer" class="hidden col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">First Date (MM/DD/YYYY)</label>
+                    <input 
+                        type="text" 
+                        id="date1Manual"
+                        placeholder="03/25/2025"
+                        class="w-full border border-gray-300 rounded-md p-2"
+                    />
+                </div>
+            </div>
+
+            <div id="secondDateContainer">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="col-span-2 md:col-span-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Second Date Input Method</label>
+                        <select 
+                            id="date2InputMethod"
+                            class="w-full border border-gray-300 rounded-md p-2"
+                            onchange="toggleDateInput(2)"
+                        >
+                            <option value="picker">Date Picker</option>
+                            <option value="manual">Manual Entry (MM/DD/YYYY)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-span-2 md:col-span-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Second Time (optional)</label>
+                        <input 
+                            type="time" 
+                            id="time2"
+                            class="w-full border border-gray-300 rounded-md p-2"
+                        />
+                    </div>
+                    
+                    <div id="date2PickerContainer" class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Second Date</label>
+                        <input 
+                            type="date" 
+                            id="date2Picker"
+                            class="w-full border border-gray-300 rounded-md p-2"
+                        />
+                    </div>
+                    
+                    <div id="date2ManualContainer" class="hidden col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Second Date (MM/DD/YYYY)</label>
+                        <input 
+                            type="text" 
+                            id="date2Manual"
+                            placeholder="03/28/2025"
+                            class="w-full border border-gray-300 rounded-md p-2"
+                        />
+                    </div>
+                </div>
+            </div>
+            
+            <button 
+                id="calculateBtn"
+                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            >
+                Calculate
+            </button>
+            
+            <div id="errorContainer" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <span class="block sm:inline" id="errorMessage"></span>
+            </div>
+            
+            <div id="resultsContainer" class="hidden mt-6 bg-gray-50 p-4 rounded-md">
+                <h2 class="text-lg font-semibold mb-3">Results</h2>
+                
+                <div class="space-y-2 text-sm">
+                    <p><span class="font-medium">From:</span> <span id="startDate"></span></p>
+                    <p><span class="font-medium">To:</span> <span id="endDate"></span></p>
+                    
+                    <div class="border-t pt-2 mt-2">
+                        <p><span class="font-medium">Total Days:</span> <span id="totalDays"></span></p>
+                        <p><span class="font-medium">Business Days:</span> <span id="businessDays"></span></p>
+                        <p><span class="font-medium">Weeks:</span> <span id="weeks"></span></p>
+                        <p><span class="font-medium">Months:</span> <span id="months"></span></p>
+                        <p><span class="font-medium">Hours:</span> <span id="hours"></span></p>
+                        <p><span class="font-medium">Minutes:</span> <span id="minutes"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleDateInput(dateNum) {
+            const method = document.getElementById(`date${dateNum}InputMethod`).value;
+            
+            if (method === 'picker') {
+                document.getElementById(`date${dateNum}PickerContainer`).classList.remove('hidden');
+                document.getElementById(`date${dateNum}ManualContainer`).classList.add('hidden');
+            } else {
+                document.getElementById(`date${dateNum}PickerContainer`).classList.add('hidden');
+                document.getElementById(`date${dateNum}ManualContainer`).classList.remove('hidden');
+            }
+        }
+        
+        // Parse a date string in MM/DD/YYYY format
+        function parseManualDate(dateStr) {
+            // Check if the format is correct
+            const dateRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+            const match = dateStr.match(dateRegex);
+            
+            if (!match) {
+                throw new Error(`Invalid date format. Please use MM/DD/YYYY format (e.g., 03/25/2025)`);
+            }
+            
+            const month = parseInt(match[1], 10) - 1; // Month is 0-indexed in JS Date
+            const day = parseInt(match[2], 10);
+            const year = parseInt(match[3], 10);
+            
+            const date = new Date(year, month, day);
+            
+            // Validate the date (this checks for things like 02/31/2025)
+            if (
+                date.getFullYear() !== year || 
+                date.getMonth() !== month || 
+                date.getDate() !== day
+            ) {
+                throw new Error(`Invalid date: ${dateStr}. Please enter a valid date.`);
+            }
+            
+            return date;
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const calculateBtn = document.getElementById('calculateBtn');
+            calculateBtn.addEventListener('click', calculateDates);
+
+            // Check if date is valid
+            function isValidDate(date) {
+                return date instanceof Date && !isNaN(date.getTime());
+            }
+
+            // Get business days between two dates
+            function getBusinessDaysBetween(startDate, endDate) {
+                let count = 0;
+                const curDate = new Date(startDate.getTime());
+                
+                while (curDate <= endDate) {
+                    const dayOfWeek = curDate.getDay();
+                    if (dayOfWeek !== 0 && dayOfWeek !== 6) count++;
+                    curDate.setDate(curDate.getDate() + 1);
+                }
+                
+                return count;
+            }
+
+            // Calculate the difference/sum between dates
+            function calculateDates() {
+                const operation = document.getElementById('operation').value;
+                const date1InputMethod = document.getElementById('date1InputMethod').value;
+                const date2InputMethod = document.getElementById('date2InputMethod').value;
+                const time1 = document.getElementById('time1').value;
+                const time2 = document.getElementById('time2').value;
+                
+                const errorContainer = document.getElementById('errorContainer');
+                const errorMessage = document.getElementById('errorMessage');
+                const resultsContainer = document.getElementById('resultsContainer');
+                
+                // Reset UI
+                errorContainer.classList.add('hidden');
+                resultsContainer.classList.add('hidden');
+                
+                try {
+                    // Get first date based on input method
+                    let datetime1;
+                    if (date1InputMethod === 'picker') {
+                        const date1Value = document.getElementById('date1Picker').value;
+                        if (!date1Value) {
+                            throw new Error('Please enter the first date');
+                        }
+                        datetime1 = new Date(date1Value);
+                    } else {
+                        const date1Value = document.getElementById('date1Manual').value;
+                        if (!date1Value) {
+                            throw new Error('Please enter the first date');
+                        }
+                        datetime1 = parseManualDate(date1Value);
+                    }
+
+                    if (time1) {
+                        const [hours, minutes] = time1.split(':');
+                        datetime1.setHours(parseInt(hours, 10));
+                        datetime1.setMinutes(parseInt(minutes, 10));
+                    } else {
+                        datetime1.setHours(0, 0, 0, 0);
+                    }
+
+                    if (!isValidDate(datetime1)) {
+                        throw new Error('Invalid first date');
+                    }
+
+                    // Get second date
+                    let datetime2;
+                    if (operation === 'add') {
+                        // For addition, we'll assume date2 is the number of days/weeks/months to add
+                        datetime2 = new Date(datetime1);
+                    } else {
+                        // For subtraction, we need a second date
+                        if (date2InputMethod === 'picker') {
+                            const date2Value = document.getElementById('date2Picker').value;
+                            if (!date2Value) {
+                                throw new Error('Please enter the second date for subtraction');
+                            }
+                            datetime2 = new Date(date2Value);
+                        } else {
+                            const date2Value = document.getElementById('date2Manual').value;
+                            if (!date2Value) {
+                                throw new Error('Please enter the second date for subtraction');
+                            }
+                            datetime2 = parseManualDate(date2Value);
+                        }
+                        
+                        if (time2) {
+                            const [hours, minutes] = time2.split(':');
+                            datetime2.setHours(parseInt(hours, 10));
+                            datetime2.setMinutes(parseInt(minutes, 10));
+                        } else {
+                            datetime2.setHours(0, 0, 0, 0);
+                        }
+                        
+                        if (!isValidDate(datetime2)) {
+                            throw new Error('Invalid second date');
+                        }
+                    }
+
+                    // Make sure date2 is later than date1 for subtraction
+                    let swapped = false;
+                    if (operation === 'subtract' && datetime1 > datetime2) {
+                        const temp = datetime1;
+                        datetime1 = datetime2;
+                        datetime2 = temp;
+                        swapped = true;
+                    }
+
+                    // Calculate differences
+                    const diffMs = Math.abs(datetime2 - datetime1);
+                    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                    const diffWeeks = Math.floor(diffDays / 7);
+                    const diffMonths = (datetime2.getMonth() + datetime2.getFullYear() * 12) - 
+                                      (datetime1.getMonth() + datetime1.getFullYear() * 12);
+                    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+                    
+                    // Business days (excluding weekends)
+                    const businessDays = getBusinessDaysBetween(datetime1, datetime2);
+
+                    // Display results
+                    document.getElementById('startDate').textContent = datetime1.toLocaleString();
+                    document.getElementById('endDate').textContent = datetime2.toLocaleString();
+                    document.getElementById('totalDays').textContent = diffDays;
+                    document.getElementById('businessDays').textContent = businessDays;
+                    document.getElementById('weeks').textContent = diffWeeks;
+                    document.getElementById('months').textContent = diffMonths;
+                    document.getElementById('hours').textContent = diffHours;
+                    document.getElementById('minutes').textContent = diffMinutes;
+                    
+                    resultsContainer.classList.remove('hidden');
+                    
+                    if (swapped) {
+                        errorContainer.classList.remove('hidden');
+                        errorMessage.textContent = 'Note: Dates were swapped to ensure first date is earlier than second date.';
+                    }
+                    
+                } catch (err) {
+                    errorContainer.classList.remove('hidden');
+                    errorMessage.textContent = err.message;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

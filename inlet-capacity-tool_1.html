@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inlet Capacity Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 5px;
+        }
+        .units {
+            min-width: 40px;
+        }
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            border-left: 5px solid #4CAF50;
+        }
+        .equation-box {
+            background-color: #f0f8ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 5px solid #1e90ff;
+            font-family: "Times New Roman", Times, serif;
+        }
+        .tab {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+            margin-bottom: 20px;
+            border-radius: 5px 5px 0 0;
+        }
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+            font-size: 16px;
+        }
+        .tab button:hover {
+            background-color: #ddd;
+        }
+        .tab button.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .tabcontent {
+            display: none;
+            padding: 6px 12px;
+            border: 1px solid #ccc;
+            border-top: none;
+            animation: fadeEffect 1s;
+            border-radius: 0 0 5px 5px;
+        }
+        @keyframes fadeEffect {
+            from {opacity: 0;}
+            to {opacity: 1;}
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Inlet Capacity Tool</h1>
+            <p>HEC-22 and FHWA Compliant Spread Calculations</p>
+        </div>
+
+        <div class="tab">
+            <button class="tablinks active" onclick="openTab(event, 'Input')">Input Parameters</button>
+            <button class="tablinks" onclick="openTab(event, 'Results')">Calculation Results</button>
+            <button class="tablinks" onclick="openTab(event, 'About')">About</button>
+        </div>
+
+        <div id="Input" class="tabcontent" style="display: block;">
+            <div class="form-group">
+                <label for="calculationType">Calculation Type:</label>
+                <select id="calculationType" onchange="toggleCalculationType()">
+                    <option value="ongrade">On-Grade</option>
+                    <option value="lowpoint">Low Point (Sag)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="flowRate">Flow Rate (Q):</label>
+                <div class="input-group">
+                    <input type="number" id="flowRate" step="0.01" min="0" value="2.19">
+                    <span class="units">cfs</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="longSlope">Longitudinal Slope (SL):</label>
+                <div class="input-group">
+                    <input type="number" id="longSlope" step="0.1" min="0" value="0.5">
+                    <span class="units">%</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="crossSlope">Cross Slope (Sx):</label>
+                <div class="input-group">
+                    <input type="number" id="crossSlope" step="0.1" min="0" value="2">
+                    <span class="units">%</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="manningsN">Manning's n:</label>
+                <div class="input-group">
+                    <input type="number" id="manningsN" step="0.001" min="0" value="0.016">
+                </div>
+            </div>
+
+            <div class="form-group" id="k-group">
+                <label for="kValue">K Value:</label>
+                <div class="input-group">
+                    <input type="number" id="kValue" step="0.01" min="0" value="0.56">
+                </div>
+            </div>
+
+            <div class="form-group" id="cw-group" style="display: none;">
+                <label for="cwValue">Weir Coefficient (Cw):</label>
+                <div class="input-group">
+                    <input type="number" id="cwValue" step="0.1" min="0" value="3">
+                </div>
+            </div>
+
+            <div class="form-group" id="length-group" style="display: none;">
+                <label for="inletLength">Inlet Length (L):</label>
+                <div class="input-group">
+                    <input type="number" id="inletLength" step="0.1" min="0" value="4">
+                    <span class="units">ft</span>
+                </div>
+            </div>
+
+            <button class="btn" onclick="calculate()">Calculate</button>
+        </div>
+
+        <div id="Results" class="tabcontent">
+            <div class="equation-box" id="equation-display">
+                <!-- Equation will be shown here -->
+            </div>
+
+            <div class="results" id="results-display">
+                <!-- Results will be shown here -->
+            </div>
+
+            <h3>Input Parameters:</h3>
+            <table id="input-table">
+                <tr>
+                    <th>Parameter</th>
+                    <th>Value</th>
+                    <th>Units</th>
+                </tr>
+                <!-- Input parameters will be shown here -->
+            </table>
+
+            <h3>Results:</h3>
+            <table id="results-table">
+                <tr>
+                    <th>Parameter</th>
+                    <th>Value</th>
+                    <th>Units</th>
+                </tr>
+                <!-- Results will be shown here -->
+            </table>
+
+            <button class="btn" onclick="copyToClipboard()">Copy All Results to Clipboard</button>
+        </div>
+
+        <div id="About" class="tabcontent">
+            <h2>About This Tool</h2>
+            <p>This Inlet Capacity Tool performs hydraulic calculations for roadway drainage design in accordance with HEC-22 and FHWA guidelines.</p>
+            
+            <h3>On-Grade Calculations</h3>
+            <p>For on-grade inlets, the tool uses the Manning's equation rearranged to solve for spread width (T):</p>
+            <div class="equation-box">
+                T = (Q·n / (K·S<sub>x</sub><sup>5/3</sup>·S<sub>L</sub><sup>1/2</sup>))<sup>3/8</sup>
+            </div>
+            <p>Where:</p>
+            <ul>
+                <li>T = Spread width (ft)</li>
+                <li>Q = Flow rate (cfs)</li>
+                <li>n = Manning's roughness coefficient</li>
+                <li>K = 0.56 (empirical constant)</li>
+                <li>S<sub>x</sub> = Cross slope (ft/ft)</li>
+                <li>S<sub>L</sub> = Longitudinal slope (ft/ft)</li>
+            </ul>
+
+            <h3>Low Point (Sag) Calculations</h3>
+            <p>For sag locations, the tool uses the weir equation to determine the water depth at the curb:</p>
+            <div class="equation-box">
+                h = (Q / (C<sub>w</sub>·L))<sup>2/3</sup>
+            </div>
+            <p>And then calculates spread as:</p>
+            <div class="equation-box">
+                T = h / S<sub>x</sub>
+            </div>
+            <p>Where:</p>
+            <ul>
+                <li>h = Water depth at curb (ft)</li>
+                <li>Q = Flow rate (cfs)</li>
+                <li>C<sub>w</sub> = Weir coefficient (typically 3.0)</li>
+                <li>L = Inlet length (ft)</li>
+                <li>S<sub>x</sub> = Cross slope (ft/ft)</li>
+                <li>T = Spread width (ft)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
+        function toggleCalculationType() {
+            const calculationType = document.getElementById("calculationType").value;
+            
+            if (calculationType === "ongrade") {
+                document.getElementById("k-group").style.display = "block";
+                document.getElementById("cw-group").style.display = "none";
+                document.getElementById("length-group").style.display = "none";
+            } else {
+                document.getElementById("k-group").style.display = "block";
+                document.getElementById("cw-group").style.display = "block";
+                document.getElementById("length-group").style.display = "block";
+            }
+        }
+
+        function calculate() {
+            const calculationType = document.getElementById("calculationType").value;
+            const Q = parseFloat(document.getElementById("flowRate").value);
+            const SL_percent = parseFloat(document.getElementById("longSlope").value);
+            const Sx_percent = parseFloat(document.getElementById("crossSlope").value);
+            const n = parseFloat(document.getElementById("manningsN").value);
+            const K = parseFloat(document.getElementById("kValue").value);
+            
+            // Convert percentages to decimal
+            const SL = SL_percent / 100;
+            const Sx = Sx_percent / 100;
+            
+            // Open results tab
+            document.getElementById("Input").style.display = "none";
+            document.getElementById("Results").style.display = "block";
+            document.getElementById("About").style.display = "none";
+            
+            const tablinks = document.getElementsByClassName("tablinks");
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            tablinks[1].className += " active";
+            
+            // Clear previous results
+            document.getElementById("input-table").innerHTML = `
+                <tr>
+                    <th>Parameter</th>
+                    <th>Value</th>
+                    <th>Units</th>
+                </tr>
+            `;
+            
+            document.getElementById("results-table").innerHTML = `
+                <tr>
+                    <th>Parameter</th>
+                    <th>Value</th>
+                    <th>Units</th>
+                </tr>
+            `;
+            
+            // Add input parameters to table
+            addRowToTable("input-table", "Flow Rate (Q)", Q, "cfs");
+            addRowToTable("input-table", "Longitudinal Slope (SL)", SL_percent, "%");
+            addRowToTable("input-table", "Cross Slope (Sx)", Sx_percent, "%");
+            addRowToTable("input-table", "Manning's n", n, "");
+            addRowToTable("input-table", "K Value", K, "");
+            
+            let spread, equationHTML, resultsHTML;
+            
+            if (calculationType === "ongrade") {
+                // On-Grade calculations
+                const numerator = Q * n;
+                const denominator = K * Math.pow(Sx, 5/3) * Math.pow(SL, 1/2);
+                spread = Math.pow(numerator / denominator, 3/8);
+                
+                // Format equation display
+                equationHTML = `
+                    <h3>On-Grade Spread Calculation:</h3>
+                    <p>T = (Q·n / (K·S<sub>x</sub><sup>5/3</sup>·S<sub>L</sub><sup>1/2</sup>))<sup>3/8</sup></p>
+                    <p>T = (${Q.toFixed(2)}·${n} / (${K}·${Sx.toFixed(4)}<sup>5/3</sup>·${SL.toFixed(4)}<sup>1/2</sup>))<sup>3/8</sup></p>
+                    <p>T = (${numerator.toFixed(4)} / ${denominator.toFixed(6)})<sup>3/8</sup></p>
+                    <p>T = ${(numerator / denominator).toFixed(6)}<sup>3/8</sup></p>
+                    <p>T = <strong>${spread.toFixed(2)}</strong> ft</p>
+                `;
+                
+                resultsHTML = `
+                    <h3>Results:</h3>
+                    <p>Spread Width (T) = <strong>${spread.toFixed(2)}</strong> ft</p>
+                `;
+                
+                // Add results to table
+                addRowToTable("results-table", "Spread Width (T)", spread.toFixed(2), "ft");
+                
+            } else {
+                // Low Point (Sag) calculations
+                const Cw = parseFloat(document.getElementById("cwValue").value);
+                const L = parseFloat(document.getElementById("inletLength").value);
+                
+                // Add sag-specific inputs to table
+                addRowToTable("input-table", "Weir Coefficient (Cw)", Cw, "");
+                addRowToTable("input-table", "Inlet Length (L)", L, "ft");
+                
+                // Calculate water depth at curb (h)
+                const h = Math.pow(Q / (Cw * L), 2/3);
+                
+                // Calculate spread
+                spread = h / Sx;
+                
+                equationHTML = `
+                    <h3>Low Point (Sag) Calculations:</h3>
+                    <p>Step 1: Calculate water depth at curb (h)</p>
+                    <p>h = (Q / (C<sub>w</sub>·L))<sup>2/3</sup></p>
+                    <p>h = (${Q.toFixed(2)} / (${Cw}·${L}))<sup>2/3</sup></p>
+                    <p>h = (${Q.toFixed(2)} / ${(Cw * L).toFixed(2)})<sup>2/3</sup></p>
+                    <p>h = ${(Q / (Cw * L)).toFixed(6)}<sup>2/3</sup></p>
+                    <p>h = <strong>${h.toFixed(4)}</strong> ft</p>
+                    <p>Step 2: Calculate spread (T)</p>
+                    <p>T = h / S<sub>x</sub></p>
+                    <p>T = ${h.toFixed(4)} / ${Sx.toFixed(4)}</p>
+                    <p>T = <strong>${spread.toFixed(2)}</strong> ft</p>
+                `;
+                
+                resultsHTML = `
+                    <h3>Results:</h3>
+                    <p>Water Depth at Curb (h) = <strong>${h.toFixed(4)}</strong> ft</p>
+                    <p>Spread Width (T) = <strong>${spread.toFixed(2)}</strong> ft</p>
+                `;
+                
+                // Add results to table
+                addRowToTable("results-table", "Water Depth at Curb (h)", h.toFixed(4), "ft");
+                addRowToTable("results-table", "Spread Width (T)", spread.toFixed(2), "ft");
+            }
+            
+            document.getElementById("equation-display").innerHTML = equationHTML;
+            document.getElementById("results-display").innerHTML = resultsHTML;
+        }
+        
+        function addRowToTable(tableId, parameter, value, units) {
+            const table = document.getElementById(tableId);
+            const row = table.insertRow(-1);
+            
+            const cell1 = row.insertCell(0);
+            const cell2 = row.insertCell(1);
+            const cell3 = row.insertCell(2);
+            
+            cell1.innerHTML = parameter;
+            cell2.innerHTML = value;
+            cell3.innerHTML = units;
+        }
+        
+        function copyToClipboard() {
+            const inputTable = document.getElementById("input-table");
+            const resultsTable = document.getElementById("results-table");
+            
+            let text = "INLET CAPACITY CALCULATION\n";
+            text += "==========================\n\n";
+            text += "Input Parameters:\n";
+            
+            // Add input parameters
+            for (let i = 1; i < inputTable.rows.length; i++) {
+                const parameter = inputTable.rows[i].cells[0].innerText;
+                const value = inputTable.rows[i].cells[1].innerText;
+                const units = inputTable.rows[i].cells[2].innerText;
+                text += parameter + ": " + value + " " + units + "\n";
+            }
+            
+            text += "\nResults:\n";
+            
+            // Add results
+            for (let i = 1; i < resultsTable.rows.length; i++) {
+                const parameter = resultsTable.rows[i].cells[0].innerText;
+                const value = resultsTable.rows[i].cells[1].innerText;
+                const units = resultsTable.rows[i].cells[2].innerText;
+                text += parameter + ": " + value + " " + units + "\n";
+            }
+            
+            // Create temporary textarea
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textarea);
+            
+            alert("Results copied to clipboard!");
+        }
+        
+        // Initialize the page
+        window.onload = function() {
+            toggleCalculationType();
+        };
+    </script>
+</body>
+</html>

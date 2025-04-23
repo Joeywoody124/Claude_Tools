@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inlet Capacity Tool (HEC-22 Simplified)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .container {
+            max-width: 700px;
+            margin: 20px auto;
+            padding: 25px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            text-align: center;
+            color: #0056b3; /* FHWA Blue */
+            margin-bottom: 20px;
+        }
+        h2 {
+            margin-top: 30px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        #inletForm label {
+            display: block;
+            margin-top: 12px;
+            margin-bottom: 3px;
+            font-weight: bold;
+            color: #555;
+        }
+        #inletForm input[type="number"],
+        #inletForm input[type="text"] {
+            width: calc(100% - 22px); /* Account for padding and border */
+            padding: 10px;
+            margin-top: 3px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            box-sizing: border-box; /* Include padding and border in element's total width/height */
+            font-size: 1rem;
+        }
+        #inletForm input[type="radio"] {
+            margin-right: 5px;
+            margin-left: 15px;
+            vertical-align: middle;
+        }
+         #inletForm .radio-group label {
+            display: inline-block; /* Keep radio labels inline */
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-weight: normal;
+        }
+        #inletForm .radio-group {
+             margin-top: 15px;
+             margin-bottom: 10px;
+             padding: 10px;
+             background-color: #e9ecef;
+             border-radius: 4px;
+        }
+        #inletForm button#calculateButton {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-top: 25px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: background-color 0.2s ease;
+        }
+        #inletForm button#calculateButton:hover {
+            background-color: #0056b3;
+        }
+        #results {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #eef7ff; /* Light blue background */
+            border: 1px solid #b8d Bff; /* Blue border */
+            border-radius: 4px;
+            text-align: center;
+        }
+        #results h2 {
+           margin-top: 0;
+           color: #0056b3;
+        }
+        #resultText {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #004085; /* Darker blue */
+            min-height: 50px; /* Prevent layout shift, increased height */
+            line-height: 1.8;
+            text-align: left; /* Align results text left */
+            padding-left: 15px; /* Indent results slightly */
+        }
+        #resultText span.result-label {
+            display: inline-block;
+            min-width: 230px; /* Align values */
+            font-weight: normal;
+            color: #333;
+        }
+         #resultText strong {
+            color: #004085; /* Ensure result value is darker blue */
+         }
+        #resultText .error {
+            color: #dc3545; /* Red for errors */
+            font-weight: bold;
+            text-align: center; /* Center error messages */
+            padding-left: 0;
+        }
+        #copyButton {
+            display: block; /* Make it block level */
+            width: auto; /* Let it size to content */
+            min-width: 200px; /* Give it some minimum width */
+            padding: 10px 20px;
+            margin: 25px auto 10px auto; /* Center the button */
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s ease;
+        }
+        #copyButton:hover {
+            background-color: #218838;
+        }
+        #copyMessage {
+            text-align: center;
+            margin-top: 5px;
+            font-style: italic;
+            color: #28a745;
+            min-height: 1.2em; /* Prevent layout shift */
+        }
+        .lowPointInputLabel,
+        .lowPointInput {
+            display: none; /* Initially hide Low Point specific inputs */
+        }
+        #equations {
+            margin-top: 30px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        #equations h2 {
+           margin-top: 0;
+           font-size: 1.3rem;
+           color: #333;
+           border-bottom: none;
+        }
+        #eqText {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.95em;
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #eee;
+            white-space: pre-wrap; /* Preserve formatting */
+            line-height: 1.5;
+        }
+        .note {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+            margin-bottom: 8px;
+        }
+        .example-note {
+            font-size: 0.9em;
+            color: #800000; /* Dark red */
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #fff3cd; /* Light yellow */
+            border: 1px solid #ffeeba;
+            border-radius: 4px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Inlet Capacity Calculator</h1>
+        <p style="text-align: center; font-style: italic;">Based on simplified HEC-22 / FHWA methods for gutter spread and depth.</p>
+
+        <form id="inletForm" onsubmit="return false;"> <div class="radio-group">
+                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Calculation Type:</label>
+                <input type="radio" id="onGrade" name="calcType" value="onGrade" checked onclick="toggleLowPointInputs()">
+                <label for="onGrade">On-Grade</label>
+                <input type="radio" id="lowPoint" name="calcType" value="lowPoint" onclick="toggleLowPointInputs()">
+                <label for="lowPoint">Low Point (Sag)</label>
+            </div>
+
+            <label for="q">Flow Rate (Q) (cfs):</label>
+            <input type="number" id="q" step="any" required placeholder="e.g., 2.19">
+
+            <label for="sl">Longitudinal Slope (S<sub>L</sub>) (%):</label>
+            <input type="number" id="sl" step="any" required placeholder="e.g., 0.5">
+            <div class="note">Enter as percentage (e.g., 0.5 for 0.5%). Used for On-Grade calculation.</div>
+
+            <label for="sx">Cross Slope (S<sub>x</sub>) (%):</label>
+            <input type="number" id="sx" step="any" required placeholder="e.g., 3.0">
+             <div class="note">Enter as percentage (e.g., 3 for 3%).</div>
+
+            <label for="n">Manning's n:</label>
+            <input type="number" id="n" value="0.013" step="0.001" required>
+             <div class="note">Typical values: 0.013 (concrete), 0.016 (asphalt). Used for On-Grade calculation.</div>
+
+            <label for="k">Constant K:</label>
+            <input type="number" id="k" value="0.56" step="any" required>
+            <div class="note">Unit conversion constant (0.56 for US Customary units). Used for On-Grade calculation.</div>
+
+            <label for="wg">Gutter Width (W<sub>g</sub>) (ft):</label>
+            <input type="number" id="wg" value="1.5" step="any" required placeholder="e.g., 1.5">
+            <div class="note">Typical gutter pan width. Included for context/reporting; not used in this simplified On-Grade spread calculation.</div>
+
+            <label for="tmax">Maximum Allowable Spread (T<sub>max</sub>) (ft):</label>
+            <input type="number" id="tmax" step="any" placeholder="e.g., 6.0 (Half Lane)">
+             <div class="note">Enter for comparison/reporting purposes. Not used in calculation.</div>
+
+            <label for="l" class="lowPointInputLabel">Inlet Length (L) (ft):</label>
+            <input type="number" id="l" class="lowPointInput" step="any" placeholder="e.g., 4.0">
+            <div class="note lowPointInputLabel">Length of the inlet opening along the curb. Required for Low Point calculation.</div>
+
+            <label for="a" class="lowPointInputLabel">Local Depression (a) (inches):</label>
+            <input type="number" id="a" class="lowPointInput" step="any" value="0" placeholder="e.g., 3 for 3 inches">
+            <div class="note lowPointInputLabel">Gutter depression at the inlet face (inches). Required for Low Point calculation (used for reporting in this simplified tool). Enter 0 if none.</div>
+            <button type="button" id="calculateButton" onclick="calculateSpread()">Calculate Spread & Depth</button>
+        </form>
+
+        <div id="equations">
+             <h2>Equations Used</h2>
+             <div id="eqText">
+                </div>
+        </div>
+
+        <div id="results">
+            <h2>Results</h2>
+            <div id="resultText">Enter values above and click Calculate.</div>
+             <div class="example-note" id="exampleNote" style="display: none; text-align: left;">
+                <strong>Note on Low Point Calculation & Example 2:</strong>
+                This tool calculates ponding depth (h) using the standard weir equation and spread (T) as h / S<sub>x</sub>. The Local Depression (a) input is included for reporting but is <strong>not used</strong> in this simplified calculation of spread (T). Therefore, the result for Example 2 (Q=2.19, Sx=3%, L=4, a=3") will still be T=10.747 ft, differing from the example's expected T=9.078 ft. Achieving the example result may require more complex methods (like those in FHWA's Hydraulic Toolbox) that are beyond the scope of these basic equations.
+             </div>
+        </div>
+
+        <button type="button" id="copyButton" onclick="copyResults()" style="display:none;">Copy Inputs & Results to Clipboard</button>
+        <p id="copyMessage"></p>
+
+    </div>
+
+    <script>
+        // Store results globally for copying
+        let currentInputs = {};
+        let currentResults = {};
+        let calculationPerformed = false; // Flag to check if calculation ran
+
+        // Function to show/hide Low Point specific inputs and update equations display
+        function toggleLowPointInputs() {
+            const calcType = document.querySelector('input[name="calcType"]:checked').value;
+            const lowPointLabels = document.querySelectorAll('.lowPointInputLabel');
+            const lowPointInputs = document.querySelectorAll('.lowPointInput');
+            const slInput = document.getElementById('sl');
+            const nInput = document.getElementById('n');
+            const kInput = document.getElementById('k');
+            const eqText = document.getElementById('eqText');
+            const exampleNote = document.getElementById('exampleNote');
+            const inletLengthInput = document.getElementById('l');
+            const localDepressionInput = document.getElementById('a');
+
+            const onGradeEq = `<strong>On-Grade Spread (T) & Depth (d) Calculation:</strong>
+1. Calculate Spread (T) using Manning's equation rearranged:
+   Q = (K / n) * S<sub>x</sub><sup>(5/3)</sup> * S<sub>L</sub><sup>(1/2)</sup> * T<sup>(8/3)</sup>
+   Solving for T:
+   T = [ Q * n / ( K * S<sub>x</sub><sup>(5/3)</sup> * S<sub>L</sub><sup>(1/2)</sup> ) ]<sup>(3/8)</sup>
+
+2. Calculate Depth at Curb (d):
+   d = T * S<sub>x</sub>
+
+Where:
+  Q  = Flow Rate (cfs)
+  n  = Manning's roughness coefficient
+  K  = Units constant (0.56 for US Customary)
+  S<sub>x</sub> = Cross Slope (ft/ft)
+  S<sub>L</sub> = Longitudinal Slope (ft/ft)
+  T  = Spread Width (ft)
+  d  = Depth at Curb (ft)`;
+
+            const lowPointEq = `<strong>Low Point (Sag) Depth (h) & Spread (T) Calculation:</strong>
+Uses the weir equation to find ponding depth (h) relative to the normal cross slope, then calculates spread (T).
+
+1. Calculate Ponding Depth at Curb (h):
+   Q = C<sub>w</sub> * L * h<sup>1.5</sup>
+   Solving for h:
+   h = [ Q / (C<sub>w</sub> * L) ]<sup>(2/3)</sup>
+
+2. Calculate Spread Width (T):
+   T = h / S<sub>x</sub>
+
+Where:
+  Q  = Flow Rate (cfs)
+  C<sub>w</sub>= Weir Coefficient (typically 3.0 for curb inlets)
+  L  = Inlet Length (ft)
+  h  = Ponding Depth at curb relative to normal cross slope (ft)
+  S<sub>x</sub> = Cross Slope (ft/ft)
+  T  = Spread Width (ft)
+  a  = Local Depression (inches/ft) - Input captured but not used in this simplified T calculation.`;
+
+            if (calcType === 'lowPoint') {
+                lowPointLabels.forEach(el => el.style.display = 'block');
+                lowPointInputs.forEach(el => el.style.display = 'block');
+                // Disable irrelevant inputs visually
+                slInput.disabled = true;
+                nInput.disabled = true;
+                kInput.disabled = true;
+                slInput.style.backgroundColor = '#e9ecef'; // Indicate disabled
+                nInput.style.backgroundColor = '#e9ecef';
+                kInput.style.backgroundColor = '#e9ecef';
+                eqText.innerHTML = lowPointEq;
+                exampleNote.style.display = 'block'; // Show the note for low point
+                 // Make Low Point inputs required
+                inletLengthInput.required = true;
+                localDepressionInput.required = true;
+            } else { // On-Grade
+                lowPointLabels.forEach(el => el.style.display = 'none');
+                lowPointInputs.forEach(el => el.style.display = 'none');
+                 // Re-enable inputs
+                slInput.disabled = false;
+                nInput.disabled = false;
+                kInput.disabled = false;
+                slInput.style.backgroundColor = '';
+                nInput.style.backgroundColor = '';
+                kInput.style.backgroundColor = '';
+                eqText.innerHTML = onGradeEq;
+                exampleNote.style.display = 'none'; // Hide the note for on-grade
+                 // Make Low Point inputs not required
+                inletLengthInput.required = false;
+                localDepressionInput.required = false;
+            }
+        }
+
+        // Function to perform the calculation
+        function calculateSpread() {
+            // Clear previous results and messages
+            document.getElementById('resultText').innerHTML = '';
+            document.getElementById('copyButton').style.display = 'none';
+            document.getElementById('copyMessage').textContent = '';
+            currentInputs = {};
+            currentResults = {};
+            calculationPerformed = false; // Reset flag
+
+            // Get common inputs
+            const calcType = document.querySelector('input[name="calcType"]:checked').value;
+            const Q_in = document.getElementById('q').value;
+            const Sx_percent_in = document.getElementById('sx').value;
+            const Wg_in = document.getElementById('wg').value; // For reporting
+            const Tmax_in = document.getElementById('tmax').value; // For reporting
+
+            // --- Input Validation ---
+            let isValid = true;
+            let errorMsg = '';
+
+            const Q = parseFloat(Q_in);
+            const Sx_percent = parseFloat(Sx_percent_in);
+            const Wg = parseFloat(Wg_in); // Parse for storage
+            const Tmax = Tmax_in === '' ? NaN : parseFloat(Tmax_in); // Optional
+
+             if (isNaN(Q) || Q <= 0) { isValid = false; errorMsg += 'Flow Rate (Q) must be a positive number. '; }
+             if (isNaN(Sx_percent) || Sx_percent <= 0) { isValid = false; errorMsg += 'Cross Slope (Sx) must be a positive percentage. '; }
+             if (isNaN(Wg) || Wg <=0) { isValid = false; errorMsg += 'Gutter Width (Wg) must be a positive number. '; }
+
+             // Store common inputs for copying
+             currentInputs = {
+                'Calculation Type': calcType === 'onGrade' ? 'On-Grade' : 'Low Point (Sag)',
+                'Flow Rate Q (cfs)': Q_in,
+                'Cross Slope Sx (%)': Sx_percent_in,
+                'Gutter Width Wg (ft)': Wg_in,
+                'Max Allowable Spread Tmax (ft)': Tmax_in === '' ? 'N/A' : Tmax_in
+             };
+
+            let T_calc = NaN;
+            let d_curb_calc = NaN; // For On-Grade result
+            let h_calc = NaN; // For low point result
+
+            // Convert common Cross Slope to ft/ft early for use in both cases
+            const Sx = isValid ? Sx_percent / 100.0 : NaN;
+
+
+            if (calcType === 'onGrade') {
+                const SL_percent_in = document.getElementById('sl').value;
+                const n_in = document.getElementById('n').value;
+                const K_in = document.getElementById('k').value;
+
+                const SL_percent = parseFloat(SL_percent_in);
+                const n = parseFloat(n_in);
+                const K = parseFloat(K_in);
+
+                if (isNaN(SL_percent) || SL_percent <= 0) { isValid = false; errorMsg += 'Longitudinal Slope (SL) must be a positive percentage for On-Grade. '; }
+                if (isNaN(n) || n <= 0) { isValid = false; errorMsg += 'Manning\'s n must be a positive number for On-Grade. '; }
+                if (isNaN(K) || K <= 0) { isValid = false; errorMsg += 'Constant K must be a positive number for On-Grade. '; }
+
+                 // Store specific inputs
+                 currentInputs['Longitudinal Slope SL (%)'] = SL_percent_in;
+                 currentInputs['Manning\'s n'] = n_in;
+                 currentInputs['Constant K'] = K_in;
+
+
+                if (isValid) {
+                    // Convert SL slope to ft/ft
+                    const SL = SL_percent / 100.0;
+
+                    // On-Grade Calculation (Simplified Manning rearrangement)
+                    // T = (Q * n / (K * Sx^(5/3) * SL^(1/2)))^(3/8)
+                    const numerator = Q * n;
+                    const denominator = K * Math.pow(Sx, 5.0/3.0) * Math.pow(SL, 0.5);
+
+                    if (denominator === 0) {
+                        isValid = false;
+                        errorMsg = 'Calculation Error: Division by zero. Check slope and K values.';
+                    } else if (numerator / denominator < 0) {
+                         isValid = false;
+                         errorMsg = 'Calculation Error: Term inside root is negative. Check inputs.';
+                    } else {
+                        T_calc = Math.pow(numerator / denominator, 3.0 / 8.0);
+                        if (isNaN(T_calc)) {
+                             isValid = false;
+                             errorMsg = 'Calculation Error: Spread (T) result is not a number. Check inputs.';
+                        } else {
+                            // Calculate depth at curb
+                            d_curb_calc = T_calc * Sx;
+                             if (isNaN(d_curb_calc)) {
+                                 isValid = false;
+                                 errorMsg = 'Calculation Error: Curb Depth (d) result is not a number. Check inputs.';
+                             }
+                        }
+                    }
+                }
+
+            } else { // Low Point (Sag)
+                const L_in = document.getElementById('l').value;
+                const a_in = document.getElementById('a').value; // Local depression in inches
+
+                const L = parseFloat(L_in);
+                const a_inches = parseFloat(a_in);
+                const Cw = 3.0; // Weir coefficient (Fixed as requested)
+
+                if (isNaN(L) || L <= 0) { isValid = false; errorMsg += 'Inlet Length (L) must be a positive number for Low Point. '; }
+                if (isNaN(a_inches) || a_inches < 0) { isValid = false; errorMsg += 'Local Depression (a) must be a non-negative number (inches). '; }
+
+
+                 // Store specific inputs (including depression in inches and ft)
+                 currentInputs['Inlet Length L (ft)'] = L_in;
+                 currentInputs['Local Depression a (in)'] = a_in;
+                 const a_ft = isValid ? a_inches / 12.0 : NaN; // Store depression in feet too
+                 currentInputs['Local Depression a (ft)'] = isValid ? a_ft.toFixed(3) : 'N/A';
+                 currentInputs['Weir Coefficient Cw'] = Cw; // Store fixed Cw
+
+                if (isValid) {
+                    // Calculate Curb Height (h) - relative to normal cross slope
+                    // h = (Q / (Cw * L))^(2/3)
+                    const h_term = Q / (Cw * L);
+                     if (h_term < 0) {
+                          isValid = false;
+                          errorMsg = 'Calculation Error: Term inside root for height (h) is negative. Check inputs.';
+                     } else {
+                          h_calc = Math.pow(h_term, 2.0 / 3.0);
+                          if (isNaN(h_calc)) {
+                              isValid = false;
+                              errorMsg = 'Calculation Error: Ponding depth (h) is not a number. Check inputs.';
+                          }
+                     }
+
+                    // Calculate Sag Spread (T) using h and Sx
+                    // T = h / Sx
+                    // Note: Local depression 'a' is NOT used here per decision.
+                    if (isValid && Sx === 0) {
+                         isValid = false;
+                         errorMsg = 'Calculation Error: Cross Slope (Sx) cannot be zero for Spread calculation.';
+                    } else if (isValid) {
+                        T_calc = h_calc / Sx;
+                         if (isNaN(T_calc)){
+                              isValid = false;
+                              errorMsg = 'Calculation Error: Spread (T) result is not a number. Check inputs.';
+                         }
+                    }
+                }
+            }
+
+            // --- Display results or errors ---
+            const resultDiv = document.getElementById('resultText');
+            if (isValid) {
+                calculationPerformed = true; // Calculation succeeded
+                let resultString = '';
+                currentResults = {}; // Reset results object
+
+                if (calcType === 'onGrade') {
+                    resultString = `<span class="result-label">Calculated On-Grade Spread (T):</span> <strong>${T_calc.toFixed(3)} ft</strong><br>`;
+                    resultString += `<span class="result-label">Calculated Depth at Curb (d):</span> <strong>${d_curb_calc.toFixed(3)} ft</strong>`;
+                    currentResults['Calculated Spread T (ft)'] = T_calc.toFixed(3);
+                    currentResults['Calculated Depth at Curb d (ft)'] = d_curb_calc.toFixed(3);
+
+                } else { // Low Point
+                     resultString = `<span class="result-label">Ponding Depth at Curb (h):</span> <strong>${h_calc.toFixed(3)} ft</strong><br>`;
+                     resultString += `<span class="result-label">Calculated Sag Spread (T):</span> <strong>${T_calc.toFixed(3)} ft</strong>`;
+                     currentResults['Ponding Depth h (ft)'] = h_calc.toFixed(3); // Renamed for clarity
+                     currentResults['Calculated Spread T (ft)'] = T_calc.toFixed(3);
+                }
+                 resultDiv.innerHTML = resultString;
+                 document.getElementById('copyButton').style.display = 'block'; // Show copy button
+            } else {
+                resultDiv.innerHTML = `<span class="error">Error: ${errorMsg}</span>`;
+                document.getElementById('copyButton').style.display = 'none';
+                 calculationPerformed = false;
+            }
+        }
+
+        // Function to copy results to clipboard
+        function copyResults() {
+            if (!calculationPerformed) {
+                 document.getElementById('copyMessage').textContent = 'Please run a valid calculation first.';
+                 document.getElementById('copyMessage').style.color = '#dc3545'; // Error color
+                 return;
+            }
+
+            let headerString = '';
+            let valueString = '';
+
+            // Create header and value rows from stored inputs
+            // Use a specific order for consistency
+            const inputOrder = [
+                'Calculation Type', 'Flow Rate Q (cfs)', 'Longitudinal Slope SL (%)', 'Cross Slope Sx (%)',
+                'Manning\'s n', 'Constant K', 'Gutter Width Wg (ft)', 'Max Allowable Spread Tmax (ft)',
+                'Inlet Length L (ft)', 'Local Depression a (in)', 'Local Depression a (ft)', 'Weir Coefficient Cw'
+            ];
+             const resultOrder = [
+                'Calculated Spread T (ft)', 'Calculated Depth at Curb d (ft)', // On Grade
+                'Ponding Depth h (ft)' // Low Point (T already included above)
+            ];
+
+
+            inputOrder.forEach(key => {
+                if (currentInputs.hasOwnProperty(key)) {
+                    headerString += key + '\t';
+                    valueString += currentInputs[key] + '\t';
+                }
+            });
+
+            resultOrder.forEach(key => {
+                 if (currentResults.hasOwnProperty(key)) {
+                     // Check if Ponding Depth h (ft) should be skipped if Depth at Curb d (ft) exists (i.e. On-Grade case)
+                     if (key === 'Ponding Depth h (ft)' && currentResults.hasOwnProperty('Calculated Depth at Curb d (ft)')) {
+                         // Skip adding h if d exists
+                     }
+                     // Check if Depth at Curb d (ft) should be skipped if Ponding Depth h (ft) exists (i.e., Low Point case)
+                     else if (key === 'Calculated Depth at Curb d (ft)' && currentResults.hasOwnProperty('Ponding Depth h (ft)')) {
+                          // Skip adding d if h exists
+                     }
+                     else {
+                        headerString += key + '\t';
+                        valueString += currentResults[key] + '\t';
+                     }
+                 }
+            });
+
+
+            // Remove trailing tabs
+            headerString = headerString.trim();
+            valueString = valueString.trim();
+
+            const copyText = headerString + '\n' + valueString; // Newline between header and values
+
+            navigator.clipboard.writeText(copyText).then(() => {
+                // Success feedback
+                document.getElementById('copyMessage').textContent = 'Inputs and results copied to clipboard!';
+                document.getElementById('copyMessage').style.color = '#28a745'; // Success color
+            }).catch(err => {
+                // Error feedback
+                console.error('Failed to copy text: ', err);
+                document.getElementById('copyMessage').textContent = 'Error copying to clipboard. Check browser permissions or copy manually.';
+                document.getElementById('copyMessage').style.color = '#dc3545'; // Error color
+            });
+        }
+
+        // Initial setup on page load
+        window.onload = () => {
+            toggleLowPointInputs(); // Set initial visibility and equations
+            document.getElementById('copyButton').style.display = 'none'; // Ensure copy button is hidden initially
+        };
+
+    </script>
+
+</body>
+</html>

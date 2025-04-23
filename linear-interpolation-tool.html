@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linear Interpolation Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .input-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: block;
+            margin: 20px auto;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .result {
+            font-size: 18px;
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #edf7ff;
+            border-radius: 4px;
+        }
+        .highlighted {
+            font-weight: bold;
+            color: #3498db;
+        }
+        canvas {
+            width: 100%;
+            height: 300px;
+            border: 1px solid #ddd;
+            margin-top: 20px;
+            background-color: white;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            background-color: #e0e0e0;
+            cursor: pointer;
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: white;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .pairs-container {
+            margin-bottom: 20px;
+        }
+        .pair {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .add-pair {
+            background-color: #27ae60;
+            margin-top: 10px;
+        }
+        .remove-pair {
+            background-color: #e74c3c;
+            margin-left: 10px;
+            padding: 10px;
+        }
+        .error {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .hint {
+            font-size: 14px;
+            color: #777;
+            margin-top: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .help-icon {
+            display: inline-block;
+            margin-left: 5px;
+            cursor: help;
+            font-size: 14px;
+            color: #3498db;
+            border: 1px solid #3498db;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            text-align: center;
+            line-height: 16px;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Linear Interpolation Calculator</h1>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="simple">Simple Mode</div>
+            <div class="tab" data-tab="advanced">Advanced Mode</div>
+        </div>
+        
+        <div id="simple-tab" class="tab-content active">
+            <div class="input-section">
+                <div class="input-group">
+                    <label for="x1">Known X1 (e.g., Depth):</label>
+                    <input type="number" id="x1" step="any" placeholder="Enter first known X value">
+                </div>
+                <div class="input-group">
+                    <label for="y1">Known Y1 (e.g., Flow):</label>
+                    <input type="number" id="y1" step="any" placeholder="Enter first known Y value">
+                </div>
+            </div>
+            
+            <div class="input-section">
+                <div class="input-group">
+                    <label for="x2">Known X2 (e.g., Depth):</label>
+                    <input type="number" id="x2" step="any" placeholder="Enter second known X value">
+                </div>
+                <div class="input-group">
+                    <label for="y2">Known Y2 (e.g., Flow):</label>
+                    <input type="number" id="y2" step="any" placeholder="Enter second known Y value">
+                </div>
+            </div>
+            
+            <div class="input-section">
+                <div class="input-group">
+                    <label>What do you want to find?</label>
+                    <select id="find-what">
+                        <option value="x">Find X (e.g., Depth) from Y (e.g., Flow)</option>
+                        <option value="y">Find Y (e.g., Flow) from X (e.g., Depth)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label id="value-to-find-label">Value of Y (e.g., Flow):</label>
+                    <input type="number" id="value-to-find" step="any" placeholder="Enter value to interpolate">
+                </div>
+            </div>
+            
+            <button id="calculate">Calculate</button>
+            
+            <div id="simple-result" class="result">
+                Results will appear here
+            </div>
+        </div>
+        
+        <div id="advanced-tab" class="tab-content">
+            <div class="pairs-container" id="pairs-container">
+                <div class="pair">
+                    <div class="input-group">
+                        <label>X (e.g., Depth):</label>
+                        <input type="number" class="x-value" step="any" placeholder="Enter X value">
+                    </div>
+                    <div class="input-group">
+                        <label>Y (e.g., Flow):</label>
+                        <input type="number" class="y-value" step="any" placeholder="Enter Y value">
+                    </div>
+                    <button class="remove-pair">X</button>
+                </div>
+                <div class="pair">
+                    <div class="input-group">
+                        <label>X (e.g., Depth):</label>
+                        <input type="number" class="x-value" step="any" placeholder="Enter X value">
+                    </div>
+                    <div class="input-group">
+                        <label>Y (e.g., Flow):</label>
+                        <input type="number" class="y-value" step="any" placeholder="Enter Y value">
+                    </div>
+                    <button class="remove-pair">X</button>
+                </div>
+            </div>
+            
+            <button class="add-pair" id="add-pair">+ Add Data Point</button>
+            
+            <div class="input-section">
+                <div class="input-group">
+                    <label>What do you want to find?</label>
+                    <select id="adv-find-what">
+                        <option value="x">Find X (e.g., Depth) from Y (e.g., Flow)</option>
+                        <option value="y">Find Y (e.g., Flow) from X (e.g., Depth)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label id="adv-value-to-find-label">Value of Y (e.g., Flow):</label>
+                    <input type="number" id="adv-value-to-find" step="any" placeholder="Enter value to interpolate">
+                </div>
+            </div>
+            
+            <button id="adv-calculate">Calculate</button>
+            
+            <div id="advanced-result" class="result">
+                Results will appear here
+            </div>
+            
+            <div id="data-table-container"></div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h2>Graph Visualization</h2>
+        <p class="hint">The graph will update when you perform a calculation. The interpolated point will be highlighted in red.</p>
+        <canvas id="graph"></canvas>
+    </div>
+    
+    <div class="container">
+        <h2>About Linear Interpolation</h2>
+        <p>Linear interpolation is a method of curve fitting using linear polynomials to construct new data points within the range of a discrete set of known data points. The formula for linear interpolation is:</p>
+        <p style="text-align: center; font-style: italic;">y = y₁ + (x - x₁) × ((y₂ - y₁) / (x₂ - x₁))</p>
+        <p>or equivalently, to find x given y:</p>
+        <p style="text-align: center; font-style: italic;">x = x₁ + (y - y₁) × ((x₂ - x₁) / (y₂ - y₁))</p>
+        <p>This tool provides a simple way to calculate and visualize linear interpolation for various data points.</p>
+    </div>
+    
+    <script>
+        // DOM Elements
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const calculateBtn = document.getElementById('calculate');
+        const advCalculateBtn = document.getElementById('adv-calculate');
+        const findWhat = document.getElementById('find-what');
+        const advFindWhat = document.getElementById('adv-find-what');
+        const valueToFindLabel = document.getElementById('value-to-find-label');
+        const advValueToFindLabel = document.getElementById('adv-value-to-find-label');
+        const addPairBtn = document.getElementById('add-pair');
+        const pairsContainer = document.getElementById('pairs-container');
+        const canvas = document.getElementById('graph');
+        const ctx = canvas.getContext('2d');
+        
+        // Example data
+        const populateExample = () => {
+            document.getElementById('x1').value = '2.29';
+            document.getElementById('y1').value = '35.81';
+            document.getElementById('x2').value = '3.29';
+            document.getElementById('y2').value = '71.77';
+            findWhat.value = 'x';
+            document.getElementById('value-to-find').value = '58.06';
+            
+            // Advanced mode
+            const xInputs = document.querySelectorAll('.x-value');
+            const yInputs = document.querySelectorAll('.y-value');
+            
+            if (xInputs.length >= 2) {
+                xInputs[0].value = '2.29';
+                yInputs[0].value = '35.81';
+                xInputs[1].value = '3.29';
+                yInputs[1].value = '71.77';
+            }
+            
+            advFindWhat.value = 'x';
+            document.getElementById('adv-value-to-find').value = '58.06';
+        };
+        
+        // Populate with example data
+        populateExample();
+        
+        // Tab switching
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                
+                // Update active tab
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Update active content
+                tabContents.forEach(content => content.classList.remove('active'));
+                document.getElementById(`${tabId}-tab`).classList.add('active');
+            });
+        });
+        
+        // Update label based on selection
+        findWhat.addEventListener('change', () => {
+            if (findWhat.value === 'x') {
+                valueToFindLabel.textContent = 'Value of Y (e.g., Flow):';
+            } else {
+                valueToFindLabel.textContent = 'Value of X (e.g., Depth):';
+            }
+        });
+        
+        advFindWhat.addEventListener('change', () => {
+            if (advFindWhat.value === 'x') {
+                advValueToFindLabel.textContent = 'Value of Y (e.g., Flow):';
+            } else {
+                advValueToFindLabel.textContent = 'Value of X (e.g., Depth):';
+            }
+        });
+        
+        // Add new data point pair
+        addPairBtn.addEventListener('click', () => {
+            const newPair = document.createElement('div');
+            newPair.className = 'pair';
+            newPair.innerHTML = `
+                <div class="input-group">
+                    <label>X (e.g., Depth):</label>
+                    <input type="number" class="x-value" step="any" placeholder="Enter X value">
+                </div>
+                <div class="input-group">
+                    <label>Y (e.g., Flow):</label>
+                    <input type="number" class="y-value" step="any" placeholder="Enter Y value">
+                </div>
+                <button class="remove-pair">X</button>
+            `;
+            pairsContainer.appendChild(newPair);
+            
+            // Add event listener to the new remove button
+            newPair.querySelector('.remove-pair').addEventListener('click', function() {
+                if (pairsContainer.children.length > 2) {
+                    pairsContainer.removeChild(newPair);
+                } else {
+                    alert('You need at least two data points for interpolation.');
+                }
+            });
+        });
+        
+        // Remove pair event delegation
+        pairsContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-pair')) {
+                if (pairsContainer.children.length > 2) {
+                    e.target.parentElement.remove();
+                } else {
+                    alert('You need at least two data points for interpolation.');
+                }
+            }
+        });
+        
+        // Linear interpolation function
+        function linearInterpolation(x1, y1, x2, y2, value, findX = true) {
+            if (findX) {
+                // Find X given Y
+                const y = value;
+                if (y1 === y2) {
+                    return null; // Horizontal line, can't interpolate X
+                }
+                return x1 + ((y - y1) * (x2 - x1)) / (y2 - y1);
+            } else {
+                // Find Y given X
+                const x = value;
+                if (x1 === x2) {
+                    return null; // Vertical line, can't interpolate Y
+                }
+                return y1 + ((x - x1) * (y2 - y1)) / (x2 - x1);
+            }
+        }
+        
+        // Simple mode calculation
+        calculateBtn.addEventListener('click', () => {
+            const simpleResult = document.getElementById('simple-result');
+            
+            try {
+                const x1 = parseFloat(document.getElementById('x1').value);
+                const y1 = parseFloat(document.getElementById('y1').value);
+                const x2 = parseFloat(document.getElementById('x2').value);
+                const y2 = parseFloat(document.getElementById('y2').value);
+                const findX = findWhat.value === 'x';
+                const valueToFind = parseFloat(document.getElementById('value-to-find').value);
+                
+                // Validate inputs
+                if (isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2) || isNaN(valueToFind)) {
+                    simpleResult.innerHTML = `<span class="error">Please fill in all fields with valid numbers.</span>`;
+                    return;
+                }
+                
+                if (findX && y1 === y2) {
+                    simpleResult.innerHTML = `<span class="error">Cannot interpolate X when Y values are equal.</span>`;
+                    return;
+                }
+                
+                if (!findX && x1 === x2) {
+                    simpleResult.innerHTML = `<span class="error">Cannot interpolate Y when X values are equal.</span>`;
+                    return;
+                }
+                
+                // Check if the value to find is in range
+                if (findX && (valueToFind < Math.min(y1, y2) || valueToFind > Math.max(y1, y2))) {
+                    simpleResult.innerHTML = `<span class="error">The Y value ${valueToFind} is outside the range [${Math.min(y1, y2)}, ${Math.max(y1, y2)}]. This is extrapolation, not interpolation.</span>`;
+                    drawGraph([[x1, y1], [x2, y2]], null, findX);
+                    return;
+                }
+                
+                if (!findX && (valueToFind < Math.min(x1, x2) || valueToFind > Math.max(x1, x2))) {
+                    simpleResult.innerHTML = `<span class="error">The X value ${valueToFind} is outside the range [${Math.min(x1, x2)}, ${Math.max(x1, x2)}]. This is extrapolation, not interpolation.</span>`;
+                    drawGraph([[x1, y1], [x2, y2]], null, findX);
+                    return;
+                }
+                
+                // Calculate result
+                const result = linearInterpolation(x1, y1, x2, y2, valueToFind, findX);
+                
+                if (result === null) {
+                    simpleResult.innerHTML = `<span class="error">Cannot interpolate with these values.</span>`;
+                    return;
+                }
+                
+                // Format result to 2 decimal places
+                const formattedResult = result.toFixed(2);
+                
+                // Display result
+                if (findX) {
+                    simpleResult.innerHTML = `For a flow of <span class="highlighted">${valueToFind}</span>, the interpolated depth is <span class="highlighted">${formattedResult}'</span>`;
+                    // Draw graph with all data points and highlight the result
+                    drawGraph([[x1, y1], [x2, y2]], [formattedResult, valueToFind], findX);
+                } else {
+                    simpleResult.innerHTML = `For a depth of <span class="highlighted">${valueToFind}'</span>, the interpolated flow is <span class="highlighted">${formattedResult}</span>`;
+                    // Draw graph with all data points and highlight the result
+                    drawGraph([[x1, y1], [x2, y2]], [valueToFind, formattedResult], findX);
+                }
+            } catch (error) {
+                simpleResult.innerHTML = `<span class="error">An error occurred: ${error.message}</span>`;
+            }
+        });
+        
+        // Advanced mode calculation
+        advCalculateBtn.addEventListener('click', () => {
+            const advancedResult = document.getElementById('advanced-result');
+            const dataTableContainer = document.getElementById('data-table-container');
+            
+            try {
+                // Get all pairs of data
+                const xInputs = document.querySelectorAll('.x-value');
+                const yInputs = document.querySelectorAll('.y-value');
+                const pairs = [];
+                
+                for (let i = 0; i < xInputs.length; i++) {
+                    const x = parseFloat(xInputs[i].value);
+                    const y = parseFloat(yInputs[i].value);
+                    
+                    if (!isNaN(x) && !isNaN(y)) {
+                        pairs.push([x, y]);
+                    }
+                }
+                
+                // Need at least 2 valid pairs
+                if (pairs.length < 2) {
+                    advancedResult.innerHTML = `<span class="error">Please provide at least 2 valid data points.</span>`;
+                    return;
+                }
+                
+                // Sort pairs by X or Y depending on what we're finding
+                const findX = advFindWhat.value === 'x';
+                const valueToFind = parseFloat(document.getElementById('adv-value-to-find').value);
+                
+                if (isNaN(valueToFind)) {
+                    advancedResult.innerHTML = `<span class="error">Please enter a valid value to interpolate.</span>`;
+                    return;
+                }
+                
+                // Sort pairs by the appropriate axis
+                if (findX) {
+                    // Sort by Y if finding X
+                    pairs.sort((a, b) => a[1] - b[1]);
+                } else {
+                    // Sort by X if finding Y
+                    pairs.sort((a, b) => a[0] - b[0]);
+                }
+                
+                // Find the pair of points to use for interpolation
+                let lowerIndex = -1;
+                let upperIndex = -1;
+                
+                if (findX) {
+                    // Finding X given Y
+                    const yValues = pairs.map(pair => pair[1]);
+                    
+                    // Check if the value is within range
+                    if (valueToFind < Math.min(...yValues) || valueToFind > Math.max(...yValues)) {
+                        advancedResult.innerHTML = `<span class="error">The Y value ${valueToFind} is outside the range [${Math.min(...yValues)}, ${Math.max(...yValues)}]. This is extrapolation, not interpolation.</span>`;
+                        drawGraph(pairs, null, findX);
+                        return;
+                    }
+                    
+                    // Find the bracketing points
+                    for (let i = 0; i < pairs.length - 1; i++) {
+                        if (pairs[i][1] <= valueToFind && valueToFind <= pairs[i+1][1]) {
+                            lowerIndex = i;
+                            upperIndex = i + 1;
+                            break;
+                        }
+                    }
+                } else {
+                    // Finding Y given X
+                    const xValues = pairs.map(pair => pair[0]);
+                    
+                    // Check if the value is within range
+                    if (valueToFind < Math.min(...xValues) || valueToFind > Math.max(...xValues)) {
+                        advancedResult.innerHTML = `<span class="error">The X value ${valueToFind} is outside the range [${Math.min(...xValues)}, ${Math.max(...xValues)}]. This is extrapolation, not interpolation.</span>`;
+                        drawGraph(pairs, null, findX);
+                        return;
+                    }
+                    
+                    // Find the bracketing points
+                    for (let i = 0; i < pairs.length - 1; i++) {
+                        if (pairs[i][0] <= valueToFind && valueToFind <= pairs[i+1][0]) {
+                            lowerIndex = i;
+                            upperIndex = i + 1;
+                            break;
+                        }
+                    }
+                }
+                
+                if (lowerIndex === -1 || upperIndex === -1) {
+                    advancedResult.innerHTML = `<span class="error">Could not find appropriate data points for interpolation.</span>`;
+                    return;
+                }
+                
+                // Get the bracketing points
+                const [x1, y1] = pairs[lowerIndex];
+                const [x2, y2] = pairs[upperIndex];
+                
+                // Calculate interpolation
+                const result = linearInterpolation(x1, y1, x2, y2, valueToFind, findX);
+                
+                if (result === null) {
+                    advancedResult.innerHTML = `<span class="error">Cannot interpolate with these values.</span>`;
+                    return;
+                }
+                
+                // Format result to 2 decimal places
+                const formattedResult = result.toFixed(2);
+                
+                // Display result
+                if (findX) {
+                    advancedResult.innerHTML = `
+                        <p>Interpolating between points (${x1}, ${y1}) and (${x2}, ${y2})</p>
+                        <p>For a flow of <span class="highlighted">${valueToFind}</span>, the interpolated depth is <span class="highlighted">${formattedResult}'</span></p>
+                    `;
+                    // Draw graph with all data points and highlight the result
+                    drawGraph(pairs, [formattedResult, valueToFind], findX);
+                } else {
+                    advancedResult.innerHTML = `
+                        <p>Interpolating between points (${x1}, ${y1}) and (${x2}, ${y2})</p>
+                        <p>For a depth of <span class="highlighted">${valueToFind}'</span>, the interpolated flow is <span class="highlighted">${formattedResult}</span></p>
+                    `;
+                    // Draw graph with all data points and highlight the result
+                    drawGraph(pairs, [valueToFind, formattedResult], findX);
+                }
+                
+                // Create data table
+                let tableHTML = `
+                    <h3>Data Table</h3>
+                    <table>
+                        <tr>
+                            <th>X (e.g., Depth)</th>
+                            <th>Y (e.g., Flow)</th>
+                        </tr>
+                `;
+                
+                // Add all pairs
+                for (const [x, y] of pairs) {
+                    tableHTML += `
+                        <tr>
+                            <td>${x}</td>
+                            <td>${y}</td>
+                        </tr>
+                    `;
+                }
+                
+                // Add interpolated result
+                if (findX) {
+                    tableHTML += `
+                        <tr style="background-color: #e3f2fd;">
+                            <td><strong>${formattedResult}</strong> (interpolated)</td>
+                            <td>${valueToFind}</td>
+                        </tr>
+                    `;
+                } else {
+                    tableHTML += `
+                        <tr style="background-color: #e3f2fd;">
+                            <td>${valueToFind}</td>
+                            <td><strong>${formattedResult}</strong> (interpolated)</td>
+                        </tr>
+                    `;
+                }
+                
+                tableHTML += `</table>`;
+                dataTableContainer.innerHTML = tableHTML;
+                
+            } catch (error) {
+                advancedResult.innerHTML = `<span class="error">An error occurred: ${error.message}</span>`;
+            }
+        });
+        
+        // Draw graph function
+        function drawGraph(points, interpolatedPoint, findingX) {
+            // Set canvas size
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            // Calculate padding
+            const padding = 40;
+            
+            // Extract x and y values
+            const xValues = points.map(point => point[0]);
+            const yValues = points.map(point => point[1]);
+            
+            // Add interpolated point to the graph if it exists
+            if (interpolatedPoint) {
+                const [interpX, interpY] = interpolatedPoint;
+                xValues.push(parseFloat(interpX));
+                yValues.push(parseFloat(interpY));
+            }
+            
+            // Find min and max values with a small buffer
+            const minX = Math.min(...xValues) - 0.5;
+            const maxX = Math.max(...xValues) + 0.5;
+            const minY = Math.min(...yValues) - 5;
+            const maxY = Math.max(...yValues) + 5;
+            
+            // Calculate scale
+            const xScale = (canvas.width - 2 * padding) / (maxX - minX);
+            const yScale = (canvas.height - 2 * padding) / (maxY - minY);
+            
+            // Function to convert data coordinates to canvas coordinates
+            const toCanvasX = x => padding + (x - minX) * xScale;
+            const toCanvasY = y => canvas.height - padding - (y - minY) * yScale;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw axes
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, canvas.height - padding);
+            ctx.lineTo(canvas.width - padding, canvas.height - padding);
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Draw X-axis labels
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            
+            // Calculate step size for X-axis
+            const xStep = (maxX - minX) / 5;
+            for (let x = minX; x <= maxX; x += xStep) {
+                const xPos = toCanvasX(x);
+                ctx.fillText(x.toFixed(1), xPos, canvas.height - padding + 10);
+                
+                // Draw grid line
+                ctx.beginPath();
+                ctx.moveTo(xPos, canvas.height - padding);
+                ctx.lineTo(xPos, padding);
+                ctx.strokeStyle = '#ddd';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            
+            // Draw Y-axis labels
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            
+            // Calculate step size for Y-axis
+            const yStep = (maxY - minY) / 5;
+            for (let y = minY; y <= maxY; y += yStep) {
+                const yPos = toCanvasY(y);
+                ctx.fillText(y.toFixed(1), padding - 10, yPos);
+                
+                // Draw grid line
+                ctx.beginPath();
+                ctx.moveTo(padding, yPos);
+                ctx.lineTo(canvas.width - padding, yPos);
+                ctx.strokeStyle = '#ddd';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            
+            // Draw X and Y axis labels
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 14px Arial';
+            ctx.fillText('Depth', canvas.width / 2, canvas.height - 10);
+            
+            ctx.save();
+            ctx.translate(15, canvas.height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillText('Flow', 0, 0);
+            ctx.restore();
+            
+            // Draw data points
+            for (let i = 0; i < points.length; i++) {
+                const [x, y] = points[i];
+                const canvasX = toCanvasX(x);
+                const canvasY = toCanvasY(y);
+                
+                ctx.beginPath();
+                ctx.arc(canvasX, canvasY, 6, 0, 2 * Math.PI);
+                ctx.fillStyle = '#3498db';
+                ctx.fill();
+                
+                // Label the point
+                ctx.fillStyle = '#555';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'bottom';
+                ctx.font = '12px Arial';
+                ctx.fillText(`(${x}, ${y})`, canvasX + 10, canvasY - 5);
+            }
+            
+            // Draw lines between points (for the graph)
+            ctx.beginPath();
+            ctx.moveTo(toCanvasX(points[0][0]), toCanvasY(points[0][1]));
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(toCanvasX(points[i][0]), toCanvasY(points[i][1]));
+            }
+            ctx.strokeStyle = '#3498db';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Highlight interpolated point if it exists
+            if (interpolatedPoint) {
+                const [interpX, interpY] = interpolatedPoint;
+                const canvasX = toCanvasX(parseFloat(interpX));
+                const canvasY = toCanvasY(parseFloat(interpY));
+                
+                ctx.beginPath();
+                ctx.arc(canvasX, canvasY, 8, 0, 2 * Math.PI);
+                ctx.fillStyle = '#e74c3c';
+                ctx.fill();
+                ctx.strokeStyle = '#c0392b';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Label the interpolated point
+                ctx.fillStyle = '#e74c3c';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                ctx.font = 'bold 14px Arial';
+                if (findingX) {
+                    ctx.fillText(`Interpolated: (${interpX}, ${interpolatedPoint[1]})`, canvas.width / 2, padding / 2);
+                } else {
+                    ctx.fillText(`Interpolated: (${interpolatedPoint[0]}, ${interpY})`, canvas.width / 2, padding / 2);
+                }
+                
+                // Draw lines to axes
+                ctx.beginPath();
+                ctx.moveTo(canvasX, canvasY);
+                ctx.lineTo(canvasX, canvas.height - padding);
+                ctx.moveTo(canvasX, canvasY);
+                ctx.lineTo(padding, canvasY);
+                ctx.setLineDash([5, 3]);
+                ctx.strokeStyle = '#e74c3c';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Label on axes
+                ctx.fillStyle = '#e74c3c';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                ctx.font = '12px Arial';
+                ctx.fillText(interpX, canvasX, canvas.height - padding + 10);
+                
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(interpY, padding - 10, canvasY);
+            }
+        }
+        
+        // Initial demo graph
+        window.onload = function() {
+            // Get initial values
+            const x1 = parseFloat(document.getElementById('x1').value);
+            const y1 = parseFloat(document.getElementById('y1').value);
+            const x2 = parseFloat(document.getElementById('x2').value);
+            const y2 = parseFloat(document.getElementById('y2').value);
+            
+            if (!isNaN(x1) && !isNaN(y1) && !isNaN(x2) && !isNaN(y2)) {
+                drawGraph([[x1, y1], [x2, y2]], null, true);
+            }
+        };
+        
+        // Resize event for canvas
+        window.addEventListener('resize', function() {
+            // Get current active tab
+            const activeTab = document.querySelector('.tab.active').getAttribute('data-tab');
+            
+            if (activeTab === 'simple') {
+                const x1 = parseFloat(document.getElementById('x1').value);
+                const y1 = parseFloat(document.getElementById('y1').value);
+                const x2 = parseFloat(document.getElementById('x2').value);
+                const y2 = parseFloat(document.getElementById('y2').value);
+                
+                if (!isNaN(x1) && !isNaN(y1) && !isNaN(x2) && !isNaN(y2)) {
+                    drawGraph([[x1, y1], [x2, y2]], null, findWhat.value === 'x');
+                }
+            } else {
+                // Advanced mode
+                const xInputs = document.querySelectorAll('.x-value');
+                const yInputs = document.querySelectorAll('.y-value');
+                const pairs = [];
+                
+                for (let i = 0; i < xInputs.length; i++) {
+                    const x = parseFloat(xInputs[i].value);
+                    const y = parseFloat(yInputs[i].value);
+                    
+                    if (!isNaN(x) && !isNaN(y)) {
+                        pairs.push([x, y]);
+                    }
+                }
+                
+                if (pairs.length >= 2) {
+                    drawGraph(pairs, null, advFindWhat.value === 'x');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

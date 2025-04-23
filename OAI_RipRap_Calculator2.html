@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Riprap Apron Calculator</title>
+  <style>
+    /* =========================
+       SAMPLE BRANDING COLORS 
+       (Adjust to match your brand)
+       ========================= */
+    :root {
+      --primary-color: #005f9e;    /* Example brand color */
+      --secondary-color: #f4b41a;  /* Example secondary color */
+      --text-color: #333333;
+      --bg-color: #ffffff;
+      --bg-accent: #f0f4f8;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: var(--bg-color);
+      color: var(--text-color);
+    }
+
+    .calculator-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      background: var(--bg-accent);
+      border-radius: 8px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+
+    /* Header / Logo */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .header img {
+      max-width: 180px;
+      height: auto;
+    }
+    .header h1 {
+      margin: 0;
+      color: var(--primary-color);
+      font-size: 1.8rem;
+    }
+
+    h2 {
+      color: var(--primary-color);
+      margin-bottom: 0.5rem;
+    }
+
+    .section {
+      margin-bottom: 1.5rem;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 6px;
+    }
+
+    .section h3 {
+      margin-top: 0;
+      color: var(--secondary-color);
+    }
+
+    .input-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .input-group label {
+      width: 200px;
+      font-weight: bold;
+      margin-right: 0.5rem;
+    }
+    .input-group input,
+    .input-group select {
+      flex: 1;
+      min-width: 0; 
+      padding: 0.5rem;
+      font-size: 1rem;
+      border: 2px solid var(--primary-color);
+      border-radius: 4px;
+    }
+    .input-group input:focus,
+    .input-group select:focus {
+      outline: none;
+      border-color: var(--secondary-color);
+    }
+
+    .radio-group {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+    .radio-group label {
+      font-weight: normal;
+    }
+
+    .results-container {
+      display: none;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 6px;
+    }
+    .results-container h2 {
+      margin-top: 0;
+    }
+    .results p {
+      margin: 0.3rem 0;
+      line-height: 1.4;
+    }
+
+    /* Buttons */
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      margin: 0.5rem 0;
+      transition: background 0.3s, color 0.3s;
+    }
+    #calcBtn {
+      background: var(--primary-color);
+      color: #fff;
+      width: 100%;
+    }
+    #calcBtn:hover {
+      background: var(--secondary-color);
+    }
+    .copy-button,
+    .print-button {
+      background: var(--primary-color);
+      color: #fff;
+      margin-right: 1rem;
+    }
+    .copy-button:hover,
+    .print-button:hover {
+      background: var(--secondary-color);
+    }
+
+    /* Table */
+    .table-container {
+      margin-top: 1rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+    }
+    table, th, td {
+      border: 1px solid var(--primary-color);
+    }
+    th, td {
+      padding: 0.5rem;
+      text-align: center;
+    }
+    th {
+      background: var(--secondary-color);
+      color: #fff;
+    }
+    td {
+      background: #fff;
+      color: var(--text-color);
+    }
+
+    /* Equations & Graphics */
+    .equations {
+      background: #fff;
+      padding: 1rem;
+      border-radius: 6px;
+      margin-top: 1.5rem;
+    }
+    .equations img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 1rem 0;
+    }
+    .equations code {
+      background: #fafafa;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator-container">
+    <!-- Header / Logo and Title -->
+    <div class="header">
+      <img 
+        src="file:///C:/JBC/Bragg%20Consulting/JBC%20-%20Share/Marketing/JBragg_brand/Logo/Plan%20Book/EPSLogo-alternate%201_side%20by%20side_1.png"
+        alt="Company Logo"
+      />
+      <h1>Riprap Apron Calculator</h1>
+    </div>
+    
+    <!-- Project & Location -->
+    <div class="section">
+      <h3>Project Information</h3>
+      <div class="input-group">
+        <label for="projectName">Project:</label>
+        <input type="text" id="projectName" placeholder="e.g. Downtown Culvert Replacement">
+      </div>
+      <div class="input-group">
+        <label for="location">Location:</label>
+        <input type="text" id="location" placeholder="e.g. Houston, TX">
+      </div>
+    </div>
+
+    <!-- Inputs -->
+    <div class="section">
+      <h3>Input Parameters</h3>
+      <!-- Culvert Type -->
+      <div class="input-group">
+        <label>Culvert Type:</label>
+        <div class="radio-group">
+          <input type="radio" id="circular" name="culvertType" value="circular" checked />
+          <label for="circular">Circular</label>
+          <input type="radio" id="box" name="culvertType" value="box" />
+          <label for="box">Box</label>
+        </div>
+      </div>
+
+      <!-- Circular: Diameter -->
+      <div class="input-group" id="diameterGroup">
+        <label for="diameter">Diameter (ft):</label>
+        <input type="number" id="diameter" step="0.01" value="2">
+      </div>
+
+      <!-- Box: Height & Width -->
+      <div class="input-group" id="boxGroup" style="display: none;">
+        <label for="boxHeight">Box Height (ft) &amp; Width (ft):</label>
+        <input type="number" id="boxHeight" step="0.01" placeholder="Height" style="margin-right:0.5rem;">
+        <input type="number" id="boxWidth" step="0.01" placeholder="Width">
+      </div>
+
+      <div class="input-group">
+        <label for="velocity">Average Velocity (ft/s):</label>
+        <input type="number" id="velocity" step="0.01" value="5">
+      </div>
+      <div class="input-group">
+        <label for="stoneWeight">Specific Weight of Stone (lb/ft³):</label>
+        <input type="number" id="stoneWeight" step="0.01" value="165">
+      </div>
+      <div class="input-group">
+        <label for="waterWeight">Specific Weight of Water (lb/ft³):</label>
+        <input type="number" id="waterWeight" step="0.01" value="62.4">
+      </div>
+      <div class="input-group">
+        <label for="overrideD50">Override d50 (in):</label>
+        <input type="number" id="overrideD50" step="0.01" placeholder="Optional">
+      </div>
+      <div class="input-group">
+        <label for="flowDepth">Flow Depth (ft):</label>
+        <input type="number" id="flowDepth" step="0.01" value="1.5">
+      </div>
+      <div class="input-group">
+        <label for="sideSlope">Side Slope (H:V):</label>
+        <input type="number" id="sideSlope" step="0.01" value="2">
+      </div>
+      <div class="input-group">
+        <label for="method">Calculation Method:</label>
+        <select id="method">
+          <option value="original">Original</option>
+          <option value="hec23">HEC-23</option>
+          <option value="usace">USACE</option>
+          <option value="maynord">Maynord</option>
+        </select>
+      </div>
+
+      <button id="calcBtn" onclick="calculateRiprap()">Calculate</button>
+    </div>
+
+    <!-- Results -->
+    <div class="results-container" id="results">
+      <h2>Results</h2>
+      <p><strong>Equivalent Culvert Dimension (ft):</strong> <span id="resultDiameter"></span></p>
+      <p><strong>Used d<sub>50</sub> (in):</strong> <span id="resultD50"></span></p>
+      <p><strong>Apron Length (ft):</strong> <span id="resultApronLength"></span></p>
+      <p><strong>Apron Thickness (ft):</strong> <span id="resultApronThickness"></span></p>
+      <p><strong>Outlet Width (Box Only):</strong> <span id="resultOutletWidth"></span></p>
+      <p><strong>Downstream Width (Box Only):</strong> <span id="resultDownstreamWidth"></span></p>
+
+      <!-- Exhibit Image Placeholder -->
+      <div id="resultsExhibit" style="margin-top:1rem; text-align:center;">
+        <img 
+          id="exhibitImage" 
+          src="https://via.placeholder.com/800x400?text=Riprap+Apron+Results+Exhibit" 
+          alt="Riprap Apron Results Exhibit" 
+          style="max-width:100%;"
+        />
+      </div>
+
+      <!-- A hidden text area for copying calculations -->
+      <textarea id="calcSummary" style="width:100%;height:100px;display:none;"></textarea>
+
+      <div style="margin-top:1rem;">
+        <button class="copy-button" onclick="copyCalculations()">Copy Calculations</button>
+        <button class="print-button" onclick="window.print()">Print or Save PDF</button>
+      </div>
+    </div>
+
+    <!-- Reference Table (Original Method Only) -->
+    <div class="section table-container" id="originalReferenceSection" style="display:none;">
+      <h3>Reference Table (Original Method)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>d<sub>50</sub> (in)</th>
+            <th>Apron Length (L, ft)</th>
+            <th>Apron Thickness (ft)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>5</td> <td>4D</td> <td>3–5 d<sub>50</sub></td></tr>
+          <tr><td>6</td> <td>4D</td> <td>3–3 d<sub>50</sub></td></tr>
+          <tr><td>14</td><td>6D</td> <td>2–2 d<sub>50</sub></td></tr>
+          <tr><td>18</td><td>5D</td> <td>2–4 d<sub>50</sub></td></tr>
+          <tr><td>20</td><td>7D</td> <td>2 d<sub>50</sub></td></tr>
+          <tr><td>22</td><td>8D</td> <td>2 d<sub>50</sub></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Equations & Graphics Section -->
+    <div class="equations">
+      <h3>Equations & Visual Reference</h3>
+      <p>Below are simplified forms of the core equations used by each calculation method (symbols may vary slightly):</p>
+      <ul>
+        <li>
+          <strong>Original Method:</strong>  
+          <code>d50 = 0.0191 &times; V<sup>2</sup> &times; (γ<sub>w</sub> / (γ<sub>s</sub> - γ<sub>w</sub>)) &times; 12</code>
+        </li>
+        <li>
+          <strong>HEC-23:</strong>  
+          <code>d50 = 0.02 &times; (Q / √D)<sup>4/3</sup> / (√g &times; √D) &times; 12</code>
+        </li>
+        <li>
+          <strong>USACE:</strong>  
+          <code>d50 = 0.0125 &times; V<sup>2</sup> &times; (γ<sub>w</sub> / (γ<sub>s</sub> - γ<sub>w</sub>)) &times; (D / h)<sup>1/3</sup> &times; 12</code>
+        </li>
+        <li>
+          <strong>Maynord:</strong>  
+          <code>d50 = 0.021 &times; (V<sup>2</sup> / (2g(S-1))) &times; 1 / (cosθ - sinθ) &times; 12</code>
+        </li>
+      </ul>
+      <p>A generic example of the riprap apron layout (not to scale):</p>
+      <img src="https://via.placeholder.com/600x300?text=Riprap+Apron+Diagram" alt="Riprap Apron Diagram Example" />
+    </div>
+  </div>
+
+  <script>
+    function showHideCulvertInputs() {
+      const boxGroup = document.getElementById('boxGroup');
+      const diameterGroup = document.getElementById('diameterGroup');
+      const culvertType = document.querySelector('input[name="culvertType"]:checked').value;
+
+      if (culvertType === 'circular') {
+        diameterGroup.style.display = 'flex';
+        boxGroup.style.display = 'none';
+      } else {
+        diameterGroup.style.display = 'none';
+        boxGroup.style.display = 'flex';
+      }
+    }
+
+    // Toggle culvert type fields on radio change
+    document.querySelectorAll('input[name="culvertType"]').forEach(radio => {
+      radio.addEventListener('change', showHideCulvertInputs);
+    });
+
+    function calculateRiprap() {
+      // Grab culvert type
+      const culvertType = document.querySelector('input[name="culvertType"]:checked').value;
+
+      // Grab inputs
+      const diameter = parseFloat(document.getElementById('diameter').value) || 0;
+      const boxHeight = parseFloat(document.getElementById('boxHeight').value) || 0;
+      const boxWidth = parseFloat(document.getElementById('boxWidth').value) || 0;
+
+      const velocity = parseFloat(document.getElementById('velocity').value) || 0;
+      const stoneWeight = parseFloat(document.getElementById('stoneWeight').value) || 0;
+      const waterWeight = parseFloat(document.getElementById('waterWeight').value) || 0;
+      const overrideD50 = parseFloat(document.getElementById('overrideD50').value) || 0;
+      const flowDepth = parseFloat(document.getElementById('flowDepth').value) || 0;
+      const sideSlope = parseFloat(document.getElementById('sideSlope').value) || 0;
+      const method = document.getElementById('method').value;
+
+      // Constants
+      const g = 32.2; // ft/s²
+
+      // Determine culvert area & "equivalent dimension" D
+      let area = 0;
+      let equivalentD = 0;
+      if (culvertType === 'circular') {
+        area = Math.PI * (diameter / 2) * (diameter / 2);
+        equivalentD = diameter;
+      } else {
+        area = boxHeight * boxWidth;
+        // Arbitrary approach: define the smaller dimension as "D"
+        equivalentD = Math.min(boxHeight, boxWidth);
+      }
+
+      // Flow Q
+      const Q = velocity * area;
+
+      // If user overrides d50, use it; else compute
+      let d50;
+      if (overrideD50 > 0) {
+        d50 = overrideD50;
+      } else {
+        if (method === 'original') {
+          d50 = 0.0191 * velocity * velocity * (waterWeight / (stoneWeight - waterWeight)) * 12;
+        } else if (method === 'hec23') {
+          d50 = 0.02 * Math.pow(Q / Math.sqrt(equivalentD), 4/3) / (Math.sqrt(g) * Math.sqrt(equivalentD));
+          d50 *= 12; // convert to inches
+        } else if (method === 'usace') {
+          d50 = 0.0125 *
+            velocity * velocity *
+            (waterWeight / (stoneWeight - waterWeight)) *
+            Math.pow(equivalentD / flowDepth, 1/3) * 12;
+        } else if (method === 'maynord') {
+          const S = stoneWeight / waterWeight;
+          const theta = Math.atan(1 / sideSlope);
+          d50 = 0.021 *
+                 (velocity * velocity / (2 * g * (S - 1))) *
+                 (1 / (Math.cos(theta) - Math.sin(theta))) *
+                 12;
+        }
+      }
+
+      // Determine apron length & thickness
+      let apronLength, apronThickness;
+      if (method === 'original') {
+        // Based on original reference table
+        if (d50 <= 5) {
+          apronLength = 4 * equivalentD;
+          apronThickness = `${(3 * d50 / 12).toFixed(2)}–${(5 * d50 / 12).toFixed(2)}`;
+        } else if (d50 <= 6) {
+          apronLength = 4 * equivalentD;
+          apronThickness = `${(3 * d50 / 12).toFixed(2)}–${(3 * d50 / 12).toFixed(2)}`;
+        } else if (d50 <= 14) {
+          apronLength = 6 * equivalentD;
+          apronThickness = `${(2 * d50 / 12).toFixed(2)}–${(2 * d50 / 12).toFixed(2)}`;
+        } else if (d50 <= 18) {
+          apronLength = 5 * equivalentD;
+          apronThickness = `${(2 * d50 / 12).toFixed(2)}–${(4 * d50 / 12).toFixed(2)}`;
+        } else if (d50 <= 20) {
+          apronLength = 7 * equivalentD;
+          apronThickness = (2 * d50 / 12).toFixed(2);
+        } else {
+          apronLength = 8 * equivalentD;
+          apronThickness = (2 * d50 / 12).toFixed(2);
+        }
+      } else if (method === 'hec23') {
+        apronLength = (3 * equivalentD).toFixed(2) + '–' + (5 * equivalentD).toFixed(2);
+        apronThickness = (1.5 * d50 / 12).toFixed(2) + '–' + (2 * d50 / 12).toFixed(2);
+      } else if (method === 'usace') {
+        apronLength = (4 * equivalentD).toFixed(2) + '–' + (6 * equivalentD).toFixed(2);
+        apronThickness = (2 * d50 / 12).toFixed(2) + '–' + (3 * d50 / 12).toFixed(2);
+      } else if (method === 'maynord') {
+        apronLength = (5 * equivalentD).toFixed(2) + '–' + (8 * equivalentD).toFixed(2);
+        apronThickness = (1.5 * d50 / 12).toFixed(2) + '–' + (2 * d50 / 12).toFixed(2);
+      }
+
+      // Box culverts: show actual box widths
+      let outletWidth = 'N/A';
+      let downstreamWidth = 'N/A';
+      if (culvertType === 'box') {
+        outletWidth = boxWidth.toFixed(2);
+        downstreamWidth = (boxWidth * 1.5).toFixed(2);
+      }
+
+      // Populate the results
+      document.getElementById('resultDiameter').textContent = equivalentD.toFixed(2);
+      document.getElementById('resultD50').textContent = d50.toFixed(2);
+      document.getElementById('resultApronLength').textContent =
+        typeof apronLength === 'number' ? apronLength.toFixed(2) : apronLength;
+      document.getElementById('resultApronThickness').textContent = apronThickness;
+      document.getElementById('resultOutletWidth').textContent = outletWidth;
+      document.getElementById('resultDownstreamWidth').textContent = downstreamWidth;
+
+      // Build text for copying
+      const calcText = 
+        "Project: " + (document.getElementById('projectName').value || "N/A") + "\n" +
+        "Location: " + (document.getElementById('location').value || "N/A") + "\n" +
+        "Culvert Type: " + culvertType + "\n" +
+        (culvertType === 'circular' 
+          ? "Diameter (ft): " + diameter.toFixed(2) 
+          : "Box Height (ft): " + boxHeight.toFixed(2) + ", Width (ft): " + boxWidth.toFixed(2)
+        ) + "\n" +
+        "Method: " + method + "\n" +
+        "d50 (in): " + d50.toFixed(2) + "\n" +
+        "Apron Length (ft): " + 
+          (typeof apronLength === 'number' ? apronLength.toFixed(2) : apronLength) + "\n" +
+        "Apron Thickness (ft): " + apronThickness + "\n" +
+        "Outlet Width (Box Only): " + outletWidth + "\n" +
+        "Downstream Width (Box Only): " + downstreamWidth + "\n";
+
+      document.getElementById('calcSummary').value = calcText;
+
+      // Show/hide the Original Reference Table
+      if (method === 'original') {
+        document.getElementById('originalReferenceSection').style.display = 'block';
+      } else {
+        document.getElementById('originalReferenceSection').style.display = 'none';
+      }
+
+      // Finally, show the results container
+      document.getElementById('results').style.display = 'block';
+    }
+
+    function copyCalculations() {
+      const textArea = document.getElementById('calcSummary');
+      textArea.style.display = 'block'; // Make visible temporarily
+      textArea.select();
+      document.execCommand('copy');
+      textArea.style.display = 'none';  // Hide again
+      alert("Calculation results copied to clipboard!");
+    }
+
+    // Initial show/hide for culvert inputs
+    showHideCulvertInputs();
+  </script>
+</body>
+</html>

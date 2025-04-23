@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Irregular Channel Normal Depth Calculator</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Candara, sans-serif; padding: 20px; }
+    textarea { width: 100%; height: 100px; font-family: Candara; }
+    canvas { max-width: 100%; height: 300px; }
+    label, input, button { display: block; margin-top: 10px; font-family: Candara; }
+    .results { margin-top: 20px; padding: 10px; border: 1px solid #ccc; font-family: Candara; }
+  </style>
+</head>
+<body>
+  <h1>Irregular Channel Normal Depth Calculator</h1>
+  <label for="tableData">Paste Station and Elevation Data (space delimited: Sta Elvn)</label>
+  <textarea id="tableData">0 8
+8 7
+10 6
+15 7
+20 8
+25 9</textarea>
+  <label for="slope">Channel Slope (%):</label>
+  <input type="number" id="slope" value="2">
+  <label for="manningsN">Manning's n:</label>
+  <input type="number" id="manningsN" value="0.033" step="0.001">
+  <label for="flow">Flow Rate (cfs):</label>
+  <input type="number" id="flow" value="5">
+  <button onclick="analyzeChannel()">Compute Normal Depth</button>
+  <canvas id="channelChart"></canvas>
+  <div class="results" id="results"></div>
+  <script>
+    let chartInstance;
+    function parseCSV(text) {
+      return text.trim().split('\n').map(row => {
+        const parts = row.trim().split(/\s+/);
+        if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) return null;
+        return { sta: Number(parts[0]), elvn: Number(parts[1]) };
+      }).filter(p => p !== null);
+    }
+    function getLowestElevation(coords) {
+      return Math.min(...coords.map(p => p.elvn));
+    }
+    function computeGeometry(coords, depth, baseElevation) {
+      let area = 0, wettedPerimeter = 0;
+      const waterSurface = baseElevation + depth;
+      for (let i = 1; i < coords.length; i++) {
+        let { sta: x1, elvn: y1 } = coords[i - 1];
+        let { sta: x2, elvn: y2 } = coords[i];
+        if (y1 < waterSurface && y2 < waterSurface) {
+          let width = x2 - x1;
+          let avgHeight = (waterSurface - y1 + waterSurface - y2) / 2;
+          area += width * avgHeight;
+          wettedPerimeter += Math.sqrt(width ** 2 + (y2 - y1) ** 2);
+        } else if ((y1 < waterSurface && y2 >= waterSurface) || (y1 >= waterSurface && y2 < waterSurface)) {
+          let dx = x2 - x1;
+          let dy = y2 - y1;
+          let slope = dy / dx;
+          let xi = y1 < y2 ? x1 + (waterSurface - y1) / slope : x2 + (waterSurface - y2) / slope;
+          let base = Math.abs(xi - (y1 < y2 ? x1 : x2));
+          let height = waterSurface - Math.min(y1, y2);
+          area += 0.5 * base * height;
+          wettedPerimeter += Math.sqrt(base ** 2 + height ** 2);
+        }
+      }
+      return { area, wettedPerimeter };
+    }
+    function manningsQ(area, perimeter, slope, n) {
+      const R = area / perimeter;
+      return (1.49 / n) * area * Math.pow(R, 2 / 3) * Math.sqrt(slope);
+    }
+    function findNormalDepth(coords, slope, n, flow, baseElevation) {
+      let lower = 0.01, upper = 20, depth;
+      for (let i = 0; i < 100; i++) {
+        depth = (lower + upper) / 2;
+        const { area, wettedPerimeter } = computeGeometry(coords, depth, baseElevation);
+        const Q = manningsQ(area, wettedPerimeter, slope, n);
+        if (Math.abs(Q - flow) < 0.01) return { depth, area, wettedPerimeter, Q };
+        if (Q > flow) upper = depth;
+        else lower = depth;
+      }
+      return { depth: -1, area: 0, wettedPerimeter: 0, Q: 0 };
+    }
+    function plotCrossSection(coords, waterSurfaceElevation) {
+      const ctx = document.getElementById('channelChart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+      const elevationData = coords.map(p => ({ x: p.sta, y: p.elvn }));
+      const wettedPoints = coords.filter(p => p.elvn < waterSurfaceElevation);
+      let waterLine = [];
+      for (let i = 1; i < coords.length; i++) {
+        const p1 = coords[i - 1], p2 = coords[i];
+        if ((p1.elvn < waterSurfaceElevation && p2.elvn >= waterSurfaceElevation) ||
+            (p1.elvn >= waterSurfaceElevation && p2.elvn < waterSurfaceElevation)) {
+          const ratio = (waterSurfaceElevation - p1.elvn) / (p2.elvn - p1.elvn);
+          const xCross = p1.sta + ratio * (p2.sta - p1.sta);
+          waterLine.push({ x: xCross, y: waterSurfaceElevation });
+        }
+        if (p1.elvn < waterSurfaceElevation && p2.elvn < waterSurfaceElevation) {
+          waterLine.push({ x: p2.sta, y: waterSurfaceElevation });
+        }
+      }
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          datasets: [
+            {
+              label: 'Channel Cross Section',
+              data: elevationData,
+              borderColor: 'black',
+              borderWidth: 2,
+              fill: false,
+              tension: 0,
+              pointRadius: 0
+            },
+            {
+              label: 'Water Surface',
+              data: waterLine,
+              borderColor: 'blue',
+              borderWidth: 2,
+              pointRadius: 0,
+              fill: false,
+              showLine: true
+            }
+          ]
+        },
+        options: {
+          scales: {
+            x: {
+              type: 'linear',
+              title: { display: true, text: 'Station (ft)' }
+            },
+            y: {
+              title: { display: true, text: 'Elevation (ft)' }
+            }
+          },
+          plugins: {
+            legend: { display: true }
+          }
+        }
+      });
+    }
+    function analyzeChannel() {
+      const coords = parseCSV(document.getElementById('tableData').value);
+      if (coords.length < 2) {
+        alert("Invalid or insufficient input data");
+        return;
+      }
+      const slope = parseFloat(document.getElementById('slope').value) / 100;
+      const n = parseFloat(document.getElementById('manningsN').value);
+      const flow = parseFloat(document.getElementById('flow').value);
+      const baseElevation = getLowestElevation(coords);
+      const result = findNormalDepth(coords, slope, n, flow, baseElevation);
+      if (result.depth < 0) {
+        document.getElementById('results').innerHTML = `<span style="color:red">No solution found for the given flow.</span>`;
+        return;
+      }
+      const hydraulicRadius = result.area / result.wettedPerimeter;
+      const avgVelocity = result.Q / result.area;
+      const waterSurfaceElevation = baseElevation + result.depth;
+      plotCrossSection(coords, waterSurfaceElevation);
+      document.getElementById('results').innerHTML = `
+        <b>Normal Depth:</b> ${result.depth.toFixed(3)} ft<br>
+        <b>Water Surface Elevation:</b> ${waterSurfaceElevation.toFixed(3)} ft<br>
+        <b>Flow:</b> ${result.Q.toFixed(3)} cfs<br>
+        <b>Area of Flow:</b> ${result.area.toFixed(3)} sq ft<br>
+        <b>Wetted Perimeter:</b> ${result.wettedPerimeter.toFixed(3)} ft<br>
+        <b>Hydraulic Radius:</b> ${hydraulicRadius.toFixed(3)} ft<br>
+        <b>Average Velocity:</b> ${avgVelocity.toFixed(3)} fps<br>
+        <b>Slope:</b> ${(slope * 100).toFixed(2)}%<br>
+        <b>Manning's n:</b> ${n}<br>
+      `;
+    }
+    window.onload = analyzeChannel;
+  </script>
+</body>
+</html>

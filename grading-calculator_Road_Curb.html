@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade and Elevation Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .calculation-mode {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .mode-button {
+            background-color: #e9ecef;
+            border: 1px solid #ced4da;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .mode-button:first-child {
+            border-radius: 4px 0 0 4px;
+        }
+        .mode-button:last-child {
+            border-radius: 0 4px 4px 0;
+        }
+        .mode-button.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        .input-section {
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background-color: white;
+        }
+        .result-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e2f3e5;
+            border-radius: 4px;
+            display: none;
+        }
+        .error-message {
+            color: #dc3545;
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            display: none;
+        }
+        .input-hint {
+            font-size: 0.85em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        /* Add visibility toggle classes */
+        .calculate-slope-mode .slope-inputs,
+        .calculate-elevation-mode .elevation-inputs,
+        .calculate-contour-mode .contour-inputs {
+            display: block;
+        }
+        .calculate-slope-mode .elevation-inputs,
+        .calculate-slope-mode .contour-inputs,
+        .calculate-elevation-mode .slope-inputs,
+        .calculate-elevation-mode .contour-inputs,
+        .calculate-contour-mode .slope-inputs,
+        .calculate-contour-mode .elevation-inputs {
+            display: none;
+        }
+        .diagram {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .diagram svg {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Grade and Elevation Calculator</h1>
+        
+        <!-- Mode Selection Buttons -->
+        <div class="calculation-mode">
+            <div class="mode-button active" id="calculate-slope-btn">Calculate Slope (%)</div>
+            <div class="mode-button" id="calculate-elevation-btn">Calculate Elevation</div>
+            <div class="mode-button" id="calculate-contour-btn">Contour Ride-up</div>
+        </div>
+
+        <!-- Visual Diagram of Slope -->
+        <div class="diagram">
+            <svg width="400" height="150" viewBox="0 0 400 150">
+                <!-- Horizontal Line -->
+                <line x1="50" y1="100" x2="350" y2="100" stroke="#333" stroke-width="2"/>
+                
+                <!-- Vertical Lines -->
+                <line x1="50" y1="40" x2="50" y2="100" stroke="#333" stroke-width="2"/>
+                <line x1="350" y1="40" x2="350" y2="100" stroke="#333" stroke-width="2"/>
+                
+                <!-- Slope Line -->
+                <line x1="50" y1="40" x2="350" y2="40" stroke="#007bff" stroke-width="3"/>
+                
+                <!-- Labels -->
+                <text x="40" y="35" text-anchor="end" font-size="12">US Point</text>
+                <text x="360" y="35" text-anchor="start" font-size="12">DS Point</text>
+                <text x="200" y="120" text-anchor="middle" font-size="12">Horizontal Distance</text>
+                <text x="25" y="70" text-anchor="middle" font-size="12">Elevation</text>
+                <text x="200" y="30" text-anchor="middle" font-size="12" fill="#007bff">Slope</text>
+                
+                <!-- Arrows -->
+                <line x1="50" y1="110" x2="350" y2="110" stroke="#666" stroke-width="1"/>
+                <polygon points="350,110 340,105 340,115" fill="#666"/>
+                <polygon points="50,110 60,105 60,115" fill="#666"/>
+            </svg>
+        </div>
+
+        <!-- Calculate Slope Mode Form -->
+        <div class="input-section slope-inputs">
+            <h2>Calculate Slope from Two Elevations</h2>
+            <div class="form-group">
+                <label for="us-elevation">Upstream (US) Elevation (feet):</label>
+                <input type="number" id="us-elevation" step="0.01" placeholder="Enter upstream elevation">
+                <div class="input-hint">Higher elevation point</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="ds-elevation">Downstream (DS) Elevation (feet):</label>
+                <input type="number" id="ds-elevation" step="0.01" placeholder="Enter downstream elevation">
+                <div class="input-hint">Lower elevation point</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="horizontal-distance">Horizontal Distance (feet):</label>
+                <input type="number" id="horizontal-distance" step="0.01" placeholder="Enter horizontal distance">
+            </div>
+            
+            <button id="calculate-slope">Calculate Slope</button>
+        </div>
+
+        <!-- Calculate Elevation Mode Form -->
+        <div class="input-section elevation-inputs" style="display: none;">
+            <h2>Calculate Missing Elevation</h2>
+            
+            <div class="form-group">
+                <label>Which elevation point do you know?</label>
+                <div style="display: flex; gap: 10px;">
+                    <div>
+                        <input type="radio" id="know-us" name="known-point" value="us" checked>
+                        <label for="know-us" style="display: inline;">Upstream (US)</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="know-ds" name="known-point" value="ds">
+                        <label for="know-ds" style="display: inline;">Downstream (DS)</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="known-elevation">Known Elevation (feet):</label>
+                <input type="number" id="known-elevation" step="0.01" placeholder="Enter known elevation">
+            </div>
+            
+            <div class="form-group">
+                <label for="slope-percentage">Slope (%):</label>
+                <input type="number" id="slope-percentage" step="0.01" placeholder="Enter slope percentage">
+                <div class="input-hint">Positive value for downward slope, negative for upward slope</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="elevation-horizontal-distance">Horizontal Distance (feet):</label>
+                <input type="number" id="elevation-horizontal-distance" step="0.01" placeholder="Enter horizontal distance">
+            </div>
+            
+            <button id="calculate-elevation">Calculate Missing Elevation</button>
+        </div>
+
+        <!-- Contour Ride-up Mode Form -->
+        <div class="input-section contour-inputs" style="display: none;">
+            <h2>Contour Ride-up Calculator</h2>
+            
+            <div class="form-group">
+                <label for="curb-height">Curb Height (feet):</label>
+                <input type="number" id="curb-height" step="0.01" placeholder="Enter curb height (e.g., 0.5 for 6 inches)">
+                <div class="input-hint">Typical curb heights: 0.5 ft (6"), 0.67 ft (8"), 0.42 ft (5")</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="longitudinal-slope">Longitudinal Slope (%):</label>
+                <input type="number" id="longitudinal-slope" step="0.01" placeholder="Enter slope percentage">
+                <div class="input-hint">Typical roadway slopes: 0.5% to 5%</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="calculation-type">Calculation Type:</label>
+                <select id="calculation-type" class="form-control">
+                    <option value="ride-distance">Calculate Ride Distance</option>
+                    <option value="even-contour">Find Even Contour Intersection</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="even-contour-group" style="display: none;">
+                <label for="reference-elevation">Reference Point Elevation (feet):</label>
+                <input type="number" id="reference-elevation" step="0.01" placeholder="Enter reference elevation">
+                <div class="input-hint">Elevation at high/low point or other known station</div>
+            </div>
+            
+            <div class="form-group" id="contour-interval-group" style="display: none;">
+                <label for="contour-interval">Contour Interval (feet):</label>
+                <input type="number" id="contour-interval" step="0.1" value="1" placeholder="Enter contour interval">
+                <div class="input-hint">Typically 1 or 2 feet for site plans</div>
+            </div>
+            
+            <button id="calculate-contour">Calculate</button>
+        </div>
+
+        <!-- Validation Error Message -->
+        <div class="error-message" id="error-message"></div>
+        
+        <!-- Results Section -->
+        <div class="result-section" id="result-section">
+            <h3>Results:</h3>
+            <p id="result-text"></p>
+        </div>
+    </div>
+
+    <script>
+        // DOM Element References
+        const calculateSlopeBtn = document.getElementById('calculate-slope-btn');
+        const calculateElevationBtn = document.getElementById('calculate-elevation-btn');
+        const calculateContourBtn = document.getElementById('calculate-contour-btn');
+        const slopeInputs = document.querySelector('.slope-inputs');
+        const elevationInputs = document.querySelector('.elevation-inputs');
+        const contourInputs = document.querySelector('.contour-inputs');
+        const calculateSlopeButton = document.getElementById('calculate-slope');
+        const calculateElevationButton = document.getElementById('calculate-elevation');
+        const calculateContourButton = document.getElementById('calculate-contour');
+        const errorMessage = document.getElementById('error-message');
+        const resultSection = document.getElementById('result-section');
+        const resultText = document.getElementById('result-text');
+        
+        // References for contour calculation
+        const calculationType = document.getElementById('calculation-type');
+        const evenContourGroup = document.getElementById('even-contour-group');
+        const contourIntervalGroup = document.getElementById('contour-interval-group');
+
+        // Switch between calculation modes
+        calculateSlopeBtn.addEventListener('click', function() {
+            calculateSlopeBtn.classList.add('active');
+            calculateElevationBtn.classList.remove('active');
+            calculateContourBtn.classList.remove('active');
+            slopeInputs.style.display = 'block';
+            elevationInputs.style.display = 'none';
+            contourInputs.style.display = 'none';
+            clearResults();
+        });
+
+        calculateElevationBtn.addEventListener('click', function() {
+            calculateElevationBtn.classList.add('active');
+            calculateSlopeBtn.classList.remove('active');
+            calculateContourBtn.classList.remove('active');
+            elevationInputs.style.display = 'block';
+            slopeInputs.style.display = 'none';
+            contourInputs.style.display = 'none';
+            clearResults();
+        });
+        
+        calculateContourBtn.addEventListener('click', function() {
+            calculateContourBtn.classList.add('active');
+            calculateSlopeBtn.classList.remove('active');
+            calculateElevationBtn.classList.remove('active');
+            contourInputs.style.display = 'block';
+            slopeInputs.style.display = 'none';
+            elevationInputs.style.display = 'none';
+            clearResults();
+        });
+        
+        // Toggle contour calculation type fields
+        calculationType.addEventListener('change', function() {
+            if (this.value === 'even-contour') {
+                evenContourGroup.style.display = 'block';
+                contourIntervalGroup.style.display = 'block';
+            } else {
+                evenContourGroup.style.display = 'none';
+                contourIntervalGroup.style.display = 'none';
+            }
+        });
+
+        // Function to validate numeric inputs
+        function validateNumericInput(value, fieldName) {
+            if (value === '' || isNaN(value)) {
+                showError(`Please enter a valid number for ${fieldName}.`);
+                return false;
+            }
+            return true;
+        }
+
+        // Function to show error message
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            resultSection.style.display = 'none';
+        }
+
+        // Function to clear results and errors
+        function clearResults() {
+            errorMessage.style.display = 'none';
+            resultSection.style.display = 'none';
+        }
+
+        // Function to show results
+        function showResult(message) {
+            resultText.innerHTML = message;
+            resultSection.style.display = 'block';
+            errorMessage.style.display = 'none';
+        }
+
+        // Calculate Slope Button Click Handler
+        calculateSlopeButton.addEventListener('click', function() {
+            // Get input values
+            const usElevation = parseFloat(document.getElementById('us-elevation').value);
+            const dsElevation = parseFloat(document.getElementById('ds-elevation').value);
+            const horizontalDistance = parseFloat(document.getElementById('horizontal-distance').value);
+            
+            // Initial artifact check - Validate inputs
+            if (!validateNumericInput(usElevation, 'Upstream Elevation') || 
+                !validateNumericInput(dsElevation, 'Downstream Elevation') || 
+                !validateNumericInput(horizontalDistance, 'Horizontal Distance')) {
+                return;
+            }
+            
+            // Additional validation
+            if (horizontalDistance <= 0) {
+                showError('Horizontal distance must be greater than zero.');
+                return;
+            }
+            
+            // Calculate slope
+            // Slope percentage = (Rise / Run) * 100 = (Elevation difference / Horizontal distance) * 100
+            const elevationDifference = usElevation - dsElevation;
+            const slopePercentage = (elevationDifference / horizontalDistance) * 100;
+            
+            // Format the result
+            const formattedSlope = slopePercentage.toFixed(2);
+            const slopeDirection = slopePercentage > 0 ? 'downward' : 'upward';
+            
+            // Display result
+            showResult(`
+                <strong>Elevation Information:</strong><br>
+                Upstream Elevation: ${usElevation.toFixed(2)} feet<br>
+                Downstream Elevation: ${dsElevation.toFixed(2)} feet<br>
+                Horizontal Distance: ${horizontalDistance.toFixed(2)} feet<br><br>
+                <strong>Calculated Result:</strong><br>
+                Slope: ${Math.abs(formattedSlope)}% (${slopeDirection})<br>
+                Elevation Difference: ${Math.abs(elevationDifference).toFixed(2)} feet
+            `);
+        });
+
+        // Calculate Elevation Button Click Handler
+        calculateElevationButton.addEventListener('click', function() {
+            // Get input values
+            const knownElevation = parseFloat(document.getElementById('known-elevation').value);
+            const slopePercentage = parseFloat(document.getElementById('slope-percentage').value);
+            const horizontalDistance = parseFloat(document.getElementById('elevation-horizontal-distance').value);
+            const knownPointIsUS = document.getElementById('know-us').checked;
+            
+            // Initial artifact check - Validate inputs
+            if (!validateNumericInput(knownElevation, 'Known Elevation') || 
+                !validateNumericInput(slopePercentage, 'Slope Percentage') || 
+                !validateNumericInput(horizontalDistance, 'Horizontal Distance')) {
+                return;
+            }
+            
+            // Additional validation
+            if (horizontalDistance <= 0) {
+                showError('Horizontal distance must be greater than zero.');
+                return;
+            }
+            
+            // Calculate elevation
+            // Change in elevation = (Slope percentage / 100) * Horizontal distance
+            const elevationChange = (slopePercentage / 100) * horizontalDistance;
+            
+            let usElevation, dsElevation;
+            if (knownPointIsUS) {
+                // If US point is known, calculate DS
+                usElevation = knownElevation;
+                dsElevation = knownElevation - elevationChange;
+            } else {
+                // If DS point is known, calculate US
+                dsElevation = knownElevation;
+                usElevation = knownElevation + elevationChange;
+            }
+            
+            // Format results
+            const calculatedPoint = knownPointIsUS ? 'Downstream' : 'Upstream';
+            const knownPoint = knownPointIsUS ? 'Upstream' : 'Downstream';
+            const slopeDirection = slopePercentage > 0 ? 'downward' : 'upward';
+            
+            // Display result
+            showResult(`
+                <strong>Input Information:</strong><br>
+                ${knownPoint} Elevation: ${knownElevation.toFixed(2)} feet<br>
+                Slope: ${Math.abs(slopePercentage.toFixed(2))}% (${slopeDirection})<br>
+                Horizontal Distance: ${horizontalDistance.toFixed(2)} feet<br><br>
+                <strong>Calculated Result:</strong><br>
+                ${calculatedPoint} Elevation: ${knownPointIsUS ? dsElevation.toFixed(2) : usElevation.toFixed(2)} feet<br>
+                Elevation Difference: ${Math.abs(elevationChange).toFixed(2)} feet
+            `);
+        });
+        
+        // Calculate Contour Button Click Handler
+        calculateContourButton.addEventListener('click', function() {
+            // Get input values based on calculation type
+            const curbHeight = parseFloat(document.getElementById('curb-height').value);
+            const longitudinalSlope = parseFloat(document.getElementById('longitudinal-slope').value);
+            const calculationType = document.getElementById('calculation-type').value;
+            
+            // Initial validation
+            if (!validateNumericInput(curbHeight, 'Curb Height') || 
+                !validateNumericInput(longitudinalSlope, 'Longitudinal Slope')) {
+                return;
+            }
+            
+            // Additional validation
+            if (curbHeight <= 0) {
+                showError('Curb height must be greater than zero.');
+                return;
+            }
+            
+            if (longitudinalSlope === 0) {
+                showError('Longitudinal slope cannot be zero.');
+                return;
+            }
+            
+            // Convert slope percentage to decimal
+            const slopeDecimal = longitudinalSlope / 100;
+            
+            if (calculationType === 'ride-distance') {
+                // Calculate ride distance: curb height / slope (as decimal)
+                const rideDistance = curbHeight / Math.abs(slopeDecimal);
+                
+                // Display result
+                showResult(`
+                    <strong>Input Information:</strong><br>
+                    Curb Height: ${curbHeight.toFixed(2)} feet (${(curbHeight * 12).toFixed(1)} inches)<br>
+                    Longitudinal Slope: ${longitudinalSlope.toFixed(2)}% (${slopeDecimal.toFixed(4)} ft/ft)<br><br>
+                    <strong>Calculated Result:</strong><br>
+                    Contour Ride-up Distance: ${rideDistance.toFixed(2)} feet<br><br>
+                    <strong>Explanation:</strong><br>
+                    The elevation contour will ride up along the curb for ${rideDistance.toFixed(2)} feet before reaching the next contour elevation.
+                `);
+            } else if (calculationType === 'even-contour') {
+                // Get additional inputs
+                const referenceElevation = parseFloat(document.getElementById('reference-elevation').value);
+                const contourInterval = parseFloat(document.getElementById('contour-interval').value);
+                
+                // Validate additional inputs
+                if (!validateNumericInput(referenceElevation, 'Reference Elevation') || 
+                    !validateNumericInput(contourInterval, 'Contour Interval')) {
+                    return;
+                }
+                
+                if (contourInterval <= 0) {
+                    showError('Contour interval must be greater than zero.');
+                    return;
+                }
+                
+                // Calculate the next even contour elevations (above and below reference)
+                const lowerContour = Math.floor(referenceElevation / contourInterval) * contourInterval;
+                const upperContour = lowerContour + contourInterval;
+                
+                // Calculate distances to each contour
+                const distanceToLower = Math.abs((referenceElevation - lowerContour) / slopeDecimal);
+                const distanceToUpper = Math.abs((upperContour - referenceElevation) / slopeDecimal);
+                
+                // Display result
+                showResult(`
+                    <strong>Input Information:</strong><br>
+                    Reference Elevation: ${referenceElevation.toFixed(2)} feet<br>
+                    Curb Height: ${curbHeight.toFixed(2)} feet (${(curbHeight * 12).toFixed(1)} inches)<br>
+                    Longitudinal Slope: ${longitudinalSlope.toFixed(2)}% (${slopeDecimal.toFixed(4)} ft/ft)<br>
+                    Contour Interval: ${contourInterval.toFixed(1)} feet<br><br>
+                    <strong>Calculated Results:</strong><br>
+                    <table style="width:100%; border-collapse: collapse; margin-bottom: 10px;">
+                        <tr>
+                            <th style="border:1px solid #ddd; padding:8px; text-align:left;">Contour Elevation</th>
+                            <th style="border:1px solid #ddd; padding:8px; text-align:left;">Distance from Reference</th>
+                            <th style="border:1px solid #ddd; padding:8px; text-align:left;">Direction</th>
+                        </tr>
+                        <tr>
+                            <td style="border:1px solid #ddd; padding:8px;">${lowerContour.toFixed(2)} feet</td>
+                            <td style="border:1px solid #ddd; padding:8px;">${distanceToLower.toFixed(2)} feet</td>
+                            <td style="border:1px solid #ddd; padding:8px;">${longitudinalSlope > 0 ? 'Downstream' : 'Upstream'}</td>
+                        </tr>
+                        <tr>
+                            <td style="border:1px solid #ddd; padding:8px;">${upperContour.toFixed(2)} feet</td>
+                            <td style="border:1px solid #ddd; padding:8px;">${distanceToUpper.toFixed(2)} feet</td>
+                            <td style="border:1px solid #ddd; padding:8px;">${longitudinalSlope > 0 ? 'Upstream' : 'Downstream'}</td>
+                        </tr>
+                    </table>
+                    <strong>Explanation:</strong><br>
+                    At the reference station, contours will be found at the distances shown above. Each contour will ride along the curb for ${(curbHeight / Math.abs(slopeDecimal)).toFixed(2)} feet.
+                `);
+            }
+        });
+    </script>
+</body>
+</html>
